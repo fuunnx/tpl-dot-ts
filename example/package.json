@@ -1,0 +1,24 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "vite-node index.ts",
+    "dev:tsc": "tsc --watch --preserveWatchOutput",
+    "dev:node": "node --enable-source-maps --watch dist/index.js",
+    "dev": "concurrently 'yarn run dev:tsc' 'yarn run dev:node'"
+  },
+  "exports": {
+    "./": "./index.ts"
+  },
+  "imports": {
+    "#tpl": "./index.ts"
+  },
+  "dependencies": {
+    "tpl.ts": "workspace:^"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.8.2",
+    "vite-node": "^3.0.9"
+  }
+}

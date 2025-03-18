@@ -1,0 +1,10 @@
+{
+  "name": "tpl.ts-workspace-root",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "./example",
+    "./lib"
+  ],
+  "packageManager": "yarn@4.7.0"
+}
