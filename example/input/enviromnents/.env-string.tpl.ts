@@ -1,4 +1,4 @@
-import {config, args} from '../index';
+import {config, args} from '../../index';
 
 
 

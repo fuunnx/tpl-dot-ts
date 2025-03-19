@@ -1,4 +1,4 @@
-import { parseArgs, inflateDir, overloadConfig } from "tpl.ts";
+import { parseArgs, inflate, overloadConfig } from "tpl.ts";
 
 export const args = parseArgs({
   input: './input',
@@ -62,7 +62,4 @@ export const config = {
 
 
 
-await inflateDir({
-  input: args.input,
-  output: `${args.output}/${args.target}` 
-})
+inflate(args.input).write(`${args.output}/${args.target}`)
