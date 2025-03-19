@@ -1,16 +1,17 @@
 import fs from 'node:fs'
-import { tmpdir, type } from 'node:os'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 import { fallbackPrinter, jsonPrinter, yamlPrinter } from './printers/printers.ts'
 import { combinePrinters } from './printers/lib.ts'
+import { runWithContexts, type ProvidedContext } from './context.ts'
 
-type Context = unknown // TODO
+
 
 interface Inflatable {
   kind: 'inflatable'
 
-  withContext(context: Context): this
+  withContext(context: ProvidedContext): this
   write(outputDir: string, outputFileName?: string): Promise<void> 
 }
 
@@ -23,7 +24,7 @@ class NonInflatable implements Inflatable {
     this.#absolutePathName = absolutePathName
   }
 
-  withContext(_context: Context) {
+  withContext(..._contexts: ProvidedContext[]) {
     return this
   }
   
@@ -39,21 +40,22 @@ class InflatableFile {
   kind = 'inflatable' as const
 
   #absolutePathName: string
-  #contexts: Context[]
+  #contexts: ProvidedContext[]
 
-  constructor(absolutePathName: string, contexts: Context[] = []) {
+  constructor(absolutePathName: string, contexts: ProvidedContext[] = []) {
     this.#absolutePathName = absolutePathName
     this.#contexts = contexts
   }
 
-  withContext(context: Context) {
-    return new InflatableFile(this.#absolutePathName, [...this.#contexts, context])
+  withContext(...contexts: ProvidedContext[]) {
+    return new InflatableFile(this.#absolutePathName, [...this.#contexts, ...contexts])
   }
 
   async #inflate() {
-    // TODO use contexts
-    const { default: result } = await import(path.join(this.#absolutePathName.replace(/\.ts$/, '.js')))
-    return result
+    return runWithContexts(this.#contexts, async () => {
+      const { default: result } = await import(path.join(this.#absolutePathName.replace(/\.ts$/, '.js')))
+      return result
+    })
   }
 
   async write(outputDir: string, outputFileName?: string) {
@@ -76,16 +78,16 @@ class InflatableDir {
   kind = 'inflatable' as const
 
   #absolutePathName: string
-  #contexts: Context[]
+  #contexts: ProvidedContext[]
 
-  constructor(absolutePathName: string, contexts: Context[] = []) {
+  constructor(absolutePathName: string, contexts: ProvidedContext[] = []) {
     this.#absolutePathName = absolutePathName
     this.#contexts = contexts
   }
 
 
-  withContext(context: Context) {
-    return new InflatableDir(this.#absolutePathName, [...this.#contexts, context])
+  withContext(...contexts: ProvidedContext[]) {
+    return new InflatableDir(this.#absolutePathName, [...this.#contexts, ...contexts])
   }
 
   async #inflate() {
@@ -104,7 +106,7 @@ class InflatableDir {
       if(isIgnored) return null
       return {
         fileName,
-        inflatable: inflatable.withContext(this.#contexts)
+        inflatable: inflatable.withContext(...this.#contexts)
       }
     }))
 

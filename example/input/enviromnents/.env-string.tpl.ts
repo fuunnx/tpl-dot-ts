@@ -1,6 +1,6 @@
-import {config, args} from '../../index';
+import { configContext, args } from '../../index';
 
-
+const config = configContext.use()
 
 // On peut simplement exporter une string, ça créera le contenu du fichier
 export default `

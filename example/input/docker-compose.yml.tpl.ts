@@ -2,14 +2,15 @@
 // import {args} from '../.runtime/registerArgs.js';
 // import { config } from '#runtime';
 
-import { config, args } from "#tpl"
+import { configContext, args } from "#tpl"
 import { define, lib } from "tpl.ts"
 
-const {docker, vars} = config
+const config = configContext.use()
+const { docker, vars, prefix, target } = config
 
 const stack = define.docker({
-  prefix: config.prefix,
-  target: args.target,
+  prefix,
+  target,
 })
 
 export default stack.compose({
@@ -136,6 +137,7 @@ export default stack.compose({
     },
   },
 })
+
 
 
 type TraefikLabelsOptions = {

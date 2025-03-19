@@ -1,6 +1,7 @@
-import { config, args } from "#tpl"
+import { configContext, args } from "#tpl"
 import { define } from "tpl.ts"
 
+const config = configContext.use()
 
 export default define.dotenv({
   COMPOSE_PROJECT_NAME: `${config.prefix}-${args.target}`,
