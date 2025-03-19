@@ -96,12 +96,14 @@ class InflatableDir {
     )
 
     const files = await Promise.all(inputFiles.map(async fileName => {
-      // const relativeFileName = `${fileName.parentPath}/${fileName.name}`
-      console.log(`Inflating ${fileName}`)
-      // if(!fileName.isFile()) return null
-      const inflatable = inflate(path.join(this.#absolutePathName, fileName.toString()))
+      fileName = fileName.toString()
+      const inflatable = await inflateAsync(path.join(this.#absolutePathName, fileName))
+
+      // ignore if file looks like `(**)` or `(**).*`
+      const isIgnored = fileName.match(/^\(.*\)(..+)?$/)
+      if(isIgnored) return null
       return {
-        fileName: fileName.toString(),
+        fileName,
         inflatable: inflatable.withContext(this.#contexts)
       }
     }))
@@ -131,6 +133,25 @@ class InflatableDir {
 
 const printer = combinePrinters([yamlPrinter, jsonPrinter, fallbackPrinter])
 
+/** same version as `inflate`, but async for better performance */
+async function inflateAsync(absolutePathName: string) {
+  const isTpl = absolutePathName.endsWith('.tpl.ts') || absolutePathName.endsWith('.tpl.js')
+  if(isTpl) {
+    return new InflatableFile(absolutePathName)
+  }
+
+  const stat = await fs.promises.stat(absolutePathName)
+  const isDir = stat.isDirectory()
+
+  if(isDir) {
+    return new InflatableDir(absolutePathName)
+  }
+
+  return new NonInflatable(absolutePathName)
+}
+
+
+/** same version as `inflateAsync`, but sync for end user convenience */
 export function inflate(absolutePathName: string) {
   const isTpl = absolutePathName.endsWith('.tpl.ts') || absolutePathName.endsWith('.tpl.js')
   if(isTpl) {
