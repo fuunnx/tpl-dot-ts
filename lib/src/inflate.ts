@@ -1,12 +1,15 @@
 import fs from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { transpile } from 'oxidase'
 
 import { fallbackPrinter, jsonPrinter, yamlPrinter } from './printers/printers.ts'
 import { combinePrinters } from './printers/lib.ts'
 import { runWithContexts, type ProvidedContext } from './context.ts'
 
-
+function randomSuffix() {
+  return `${Date.now()}-${Math.random()}`
+}
 
 interface Inflatable {
   kind: 'inflatable'
@@ -52,9 +55,19 @@ class InflatableFile {
   }
 
   async #inflate() {
+    // maybe memoize according to the current context stack ?
     return runWithContexts(this.#contexts, async () => {
-      const { default: result } = await import(path.join(this.#absolutePathName.replace(/\.ts$/, '.js')))
-      return result
+      const originalFileName = path.join(this.#absolutePathName)
+      const copyFileName = `${originalFileName}.${randomSuffix()}.js`
+      const content = await fs.promises.readFile(originalFileName, 'utf-8')
+      await fs.promises.writeFile(copyFileName, transpile(content))
+
+      try {
+        const { default: result } = await import(copyFileName)
+        return result
+      } finally {
+        await fs.promises.rm(copyFileName)
+      }
     })
   }
 
@@ -71,7 +84,6 @@ class InflatableFile {
     
     return fs.promises.writeFile(path.join(outputDir, outputFileName ?? finalFileName), printedValue)
   }
-
 }
 
 class InflatableDir {
@@ -91,7 +103,6 @@ class InflatableDir {
   }
 
   async #inflate() {
-    // TODO use contexts
     const inputFiles = fs.readdirSync(
       this.#absolutePathName, 
       { recursive: false }
@@ -114,7 +125,7 @@ class InflatableDir {
   }
 
   async write(outputDir: string) {
-    const tmpOutput = `${tmpdir()}/tpl.ts-${Date.now()}.${Math.random()}`
+    const tmpOutput = `${tmpdir()}/tpl.ts-${randomSuffix()}`
     await fs.promises.mkdir(tmpOutput, { recursive: true })
   
     const files = await this.#inflate()
@@ -154,18 +165,22 @@ async function inflateAsync(absolutePathName: string) {
 
 
 /** same version as `inflateAsync`, but sync for end user convenience */
-export function inflate(absolutePathName: string) {
-  const isTpl = absolutePathName.endsWith('.tpl.ts') || absolutePathName.endsWith('.tpl.js')
-  if(isTpl) {
-    return new InflatableFile(absolutePathName)
+export const Tpl = {
+  from(absolutePathName: string) {
+    const isTpl = absolutePathName.endsWith('.tpl.ts') 
+      || absolutePathName.endsWith('.tpl.js')
+    
+    if(isTpl) {
+      return new InflatableFile(absolutePathName)
+    }
+
+    const stat = fs.statSync(absolutePathName)
+    const isDir = stat.isDirectory()
+
+    if(isDir) {
+      return new InflatableDir(absolutePathName)
+    }
+
+    return new NonInflatable(absolutePathName)
   }
-
-  const stat = fs.statSync(absolutePathName)
-  const isDir = stat.isDirectory()
-
-  if(isDir) {
-    return new InflatableDir(absolutePathName)
-  }
-
-  return new NonInflatable(absolutePathName)
 }

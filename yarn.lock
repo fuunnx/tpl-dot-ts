@@ -1080,6 +1080,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"oxidase@npm:^0.0.3":
+  version: 0.0.3
+  resolution: "oxidase@npm:0.0.3"
+  checksum: 10c0/85e22cfc7dacef1fd549be24a1b77814e9c1a66a05b34dc8a0b5ba12fed107612d8e64f8645ad3e0547a63d9c993571f57e9841c7df8cd4ba4512afb17dab729
+  languageName: node
+  linkType: hard
+
 "p-map@npm:^7.0.2":
   version: 7.0.3
   resolution: "p-map@npm:7.0.3"
@@ -1441,6 +1448,7 @@ __metadata:
     "@types/node": "npm:^22.13.10"
     commander: "npm:^13.1.0"
     compose-spec-schema: "npm:^1.0.0"
+    oxidase: "npm:^0.0.3"
     yaml: "npm:^2.7.0"
     zod: "npm:^3.24.2"
   languageName: unknown

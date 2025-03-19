@@ -1,9 +1,11 @@
-import { parseArgs, inflate, overloadConfig, createContext } from "tpl.ts";
+import { parseArgs, Tpl, overloadConfig, createContext } from "tpl.ts";
+
+console.time('execution time')
 
 export const args = parseArgs({
   input: './input',
   output: './output',
-  target: ['development', 'production', 'preproduction', 'integ'] as const,
+  target: ['development', 'integ', 'preproduction', 'production'] as const,
   isLocal: true,
   isPersistant: true,
   isApiDev: true
@@ -66,15 +68,16 @@ function resolveConfig(target: typeof args.target) {
 
 export const configContext = createContext<ReturnType<typeof resolveConfig>>('config')
 
-const input = inflate(args.input)
-  
+const input = Tpl.from(args.input)
 await Promise.all([
   input.withContext(configContext.provide(resolveConfig('development')))
     .write(`${args.output}/development`),
-  // input.withContext(configContext.provide(resolveConfig('production')))
-  //   .write(`${args.output}/production`),
-  // input.withContext(configContext.provide(resolveConfig('preproduction')))
-  //   .write(`${args.output}/preproduction`),
-  // input.withContext(configContext.provide(resolveConfig('integ')))
-  //   .write(`${args.output}/integ`),
+  input.withContext(configContext.provide(resolveConfig('integ')))
+    .write(`${args.output}/integ`),
+  input.withContext(configContext.provide(resolveConfig('preproduction')))
+    .write(`${args.output}/preproduction`),
+  input.withContext(configContext.provide(resolveConfig('production')))
+    .write(`${args.output}/production`),
 ])
+
+console.timeEnd('execution time')

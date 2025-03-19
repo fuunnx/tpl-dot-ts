@@ -15,10 +15,11 @@ volumes:
   image-proxy-data: {}
   percolate-data: {}
 services:
-  nartex-development-db:
+  nartex-integ-db:
     image: registry.projects.nartex.fr/nartex/system/citus-postgis:internal-todo
     env_file:
       - ./environment/db.env
+    user: 1002:1002
     networks:
       - default
     healthcheck:
@@ -33,7 +34,7 @@ services:
     volumes:
       - ./config/citus/docker-entrypoint-initdb.d/multi-databases.sh:/docker-entrypoint-initdb.d/multi-databases.sh
       - postgres-data:/var/lib/postgresql/data
-  nartex-development-typesense:
+  nartex-integ-typesense:
     image: typesense/typesense:1-2-3
     env_file:
       - ./environment/typesense.env
@@ -45,7 +46,7 @@ services:
     depends_on: []
     volumes:
       - typesense-data:/data
-  nartex-development-minio:
+  nartex-integ-minio:
     image: minio/minio:RELEASE.2022-08-26T19-53-15Z.fips
     command: "server /data --console-address :9001 #http://minio/data"
     env_file:
