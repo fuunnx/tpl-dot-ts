@@ -5,7 +5,7 @@
 import { configContext, args } from "#tpl"
 import { define, lib } from "tpl.ts"
 
-const config = configContext.use()
+const config = configContext.consume()
 const { docker, vars, prefix, target } = config
 
 const stack = define.docker({

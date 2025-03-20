@@ -5,7 +5,11 @@ import { transpile } from 'oxidase'
 
 import { fallbackPrinter, jsonPrinter, yamlPrinter } from './printers/printers.ts'
 import { combinePrinters } from './printers/lib.ts'
-import { runWithContexts, type ProvidedContext } from './context.ts'
+import { getSnapshotId, runWithContexts, type ProvidedContext } from './context.ts'
+import { register } from 'node:module'
+import { isTplFile, tplFileExtensionRegex } from './isTplFile.ts'
+
+register(import.meta.url + '/../register.js')
 
 function randomSuffix() {
   return `${Date.now()}-${Math.random()}`
@@ -55,14 +59,16 @@ class InflatableFile {
   }
 
   async #inflate() {
+    const contextsSnapshoptId = getSnapshotId(this.#contexts)
+
     // maybe memoize according to the current context stack ?
     return runWithContexts(this.#contexts, async () => {
       const originalFileName = path.join(this.#absolutePathName)
-      const copyFileName = `${originalFileName}.${randomSuffix()}.js`
-      const content = await fs.promises.readFile(originalFileName, 'utf-8')
-      await fs.promises.writeFile(copyFileName, transpile(content))
-
+      const copyFileName = path.resolve(`${originalFileName}?context=${contextsSnapshoptId}.js`)
+      
       try {
+        const content = await fs.promises.readFile(originalFileName, 'utf-8')
+        await fs.promises.writeFile(copyFileName, transpile(content))
         const { default: result } = await import(copyFileName)
         return result
       } finally {
@@ -75,7 +81,7 @@ class InflatableFile {
     const result = await this.#inflate()
 
     const fileName = path.basename(this.#absolutePathName)
-    const finalFileName = fileName.replace(/\.tpl\.[tj]s$/, '')
+    const finalFileName = fileName.replace(tplFileExtensionRegex, '')
     const printedValue = printer.print(finalFileName, result)
 
     if(printedValue === null) {
@@ -144,12 +150,11 @@ class InflatableDir {
   }
 }
 
-const printer = combinePrinters([yamlPrinter, jsonPrinter, fallbackPrinter])
+const printer = combinePrinters([yamlPrinter(), jsonPrinter(), fallbackPrinter()])
 
 /** same version as `inflate`, but async for better performance */
 async function inflateAsync(absolutePathName: string) {
-  const isTpl = absolutePathName.endsWith('.tpl.ts') || absolutePathName.endsWith('.tpl.js')
-  if(isTpl) {
+  if(isTplFile(absolutePathName)) {
     return new InflatableFile(absolutePathName)
   }
 
@@ -167,10 +172,7 @@ async function inflateAsync(absolutePathName: string) {
 /** same version as `inflateAsync`, but sync for end user convenience */
 export const Tpl = {
   from(absolutePathName: string) {
-    const isTpl = absolutePathName.endsWith('.tpl.ts') 
-      || absolutePathName.endsWith('.tpl.js')
-    
-    if(isTpl) {
+    if(isTplFile(absolutePathName)) {
       return new InflatableFile(absolutePathName)
     }
 

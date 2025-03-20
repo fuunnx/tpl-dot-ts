@@ -16,7 +16,7 @@ volumes:
   percolate-data: {}
 services:
   nartex-production-db:
-    image: registry.projects.nartex.fr/nartex/system/citus-postgis:todo
+    image: registry.projects.nartex.fr/nartex/system/citus-postgis:internal-todo
     env_file:
       - ./environment/db.env
     networks:
@@ -86,6 +86,6 @@ services:
       traefik.http.routers.nartex_development_minio_console.rule: Host(`minio.nartex.fr`)
       traefik.http.routers.nartex_development_minio_console.service: nartex_development_minio_console
   api:
-    image: realty/api:v3-4-0-release
+    image: realty/api:release/3-4-debug
     env_file:
       - .env

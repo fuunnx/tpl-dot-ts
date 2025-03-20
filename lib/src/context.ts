@@ -1,10 +1,13 @@
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {fail} from 'node:assert';
+import {DeepCache} from './cache.ts';
+import { randomUUID } from 'node:crypto';
+import { associateId } from './associateId.ts';
 
 type Context<T> = {
   '~storage': AsyncLocalStorage<T | EMPTY>
   provide(value: T): ProvidedContext<T>
-  use(): T
+  consume(): T
 }
 export type ProvidedContext<T = unknown> = [AsyncLocalStorage<T | EMPTY>, T]
 
@@ -32,10 +35,14 @@ export function createContext<T>(name: string, getDefaultValue: () => T = () => 
       return [storage, value] as const
     },
 
-    use() {
+    consume() {
       const value = storage.getStore()
       if(value === EMPTY) return getDefaultValue()
       else return value!
     },
   }
+}
+
+export function getSnapshotId(contexts: ProvidedContext[]): string {
+  return associateId(contexts.flat())
 }

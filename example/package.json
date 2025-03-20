@@ -1,11 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "start": "vite-node index.ts",
-    "dev:tsc": "tsc --watch --preserveWatchOutput",
-    "dev:node": "node --enable-source-maps --watch dist/index.js",
-    "dev": "concurrently 'yarn run dev:tsc' 'yarn run dev:node'"
+    "build": "vite-node index.ts"
   },
   "exports": {
     "./": "./index.ts"

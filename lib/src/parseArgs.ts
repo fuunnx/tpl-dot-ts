@@ -32,6 +32,7 @@ export function parseArgs<IArgs extends Args>(args: IArgs): ParsedArgs<IArgs> {
       continue
     }
 
+
     const isString = typeof value === 'string'
     if(isString) {
       const option = new Option(`--${key} <${key}>`).default(value)
