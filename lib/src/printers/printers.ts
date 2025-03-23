@@ -1,6 +1,24 @@
 import yaml from 'yaml';
 import { type Printer } from './types.ts';
 
+export namespace TplTs {
+  export interface Printers {
+    fallback: {
+      'data': string
+    }
+    yaml: {
+      'data': string | Record<string, unknown>
+    }
+    json: {
+      'data': string | Record<string, unknown>
+    }
+    // dir: {
+    //   'data': string | Record<string, unknown>
+    // }
+  }
+
+  export type Printable = TplTs.Printers[keyof TplTs.Printers]['data']
+}
 
 export function yamlPrinter(): Printer {
 
@@ -42,3 +60,15 @@ export function fallbackPrinter(): Printer {
     }
   }
 }
+
+// TODO
+// export function prettierPrinter(): Printer {
+
+//   return {
+//     name: 'prettier',
+//     print: (_fileName: string, data: unknown) => {
+//       if (typeof data === 'string') return prettier(data)
+//       return null
+//     }
+//   }
+// }

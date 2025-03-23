@@ -11,8 +11,11 @@ type ParsedArgs<IArgs extends Args> = {
 // use zod ?
 export function parseArgs<IArgs extends Args>(args: IArgs): ParsedArgs<IArgs> {
   for (const [key, value] of Object.entries(args)) {
+    if(program.options.find(option => option.long === `--${key}`)) continue
+  
     const isBool = typeof value === 'boolean'
     if(isBool) {
+
       const parseBool = (params: string) => {
         if(params === 'true') return true
         if(params === 'false') return false

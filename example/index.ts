@@ -1,7 +1,6 @@
-import { parseArgs, Tpl, overloadConfig, createContext } from "tpl.ts";
-import { memoize } from "../lib/src/cache.ts";
+import { parseArgs, Tpl, overloadConfig, createContext, defineDir, memoize, flattenContent } from "tpl.ts";
+import type { Writeable, WriteableDir } from "../lib/src/types.ts";
 
-console.time('execution time')
 
 export const args = parseArgs({
   input: './input',
@@ -81,16 +80,36 @@ const createConfig = memoize((target: Target) => {
 export const configContext = createContext<ReturnType<typeof createConfig>>('config')
 
 const input = Tpl.from('./input')
-Promise.all([
-  input.withContext(configContext.provide(createConfig('development')))
-    .write(`${args.output}/development`),
-  input.withContext(configContext.provide(createConfig('integ')))
-    .write(`${args.output}/integ`),
-  input.withContext(configContext.provide(createConfig('preproduction')))
-    .write(`${args.output}/preproduction`),
-  input.withContext(configContext.provide(createConfig('production')))
-    .write(`${args.output}/production`),
-]).finally(() => {
-  console.timeEnd('execution time')
+
+const dir = defineDir<Record<Target, Writeable>>({
+  development: input.withContext(
+    configContext.provide(createConfig('development'))
+  ),
+  integ: input.withContext(
+    configContext.provide(createConfig('integ'))
+  ),
+  preproduction: input.withContext(
+    configContext.provide(createConfig('preproduction'))
+  ),
+  production: input.withContext(
+    configContext.provide(createConfig('production'))
+  ),
 })
 
+
+console.log(await flattenContent(await dir.content()))
+console.time('execution time')
+// await dir.write(args.output)
+console.timeEnd('execution time')
+// Promise.all([
+//   input.withContext(configContext.provide(createConfig('development')))
+//     .write(`${args.output}/development`),
+//   input.withContext(configContext.provide(createConfig('integ')))
+//     .write(`${args.output}/integ`),
+//   input.withContext(configContext.provide(createConfig('preproduction')))
+//     .write(`${args.output}/preproduction`),
+//   input.withContext(configContext.provide(createConfig('production')))
+//     .write(`${args.output}/production`),
+// ]).finally(() => {
+//   console.timeEnd('execution time')
+// })

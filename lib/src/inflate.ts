@@ -1,19 +1,16 @@
 import fs from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { transpile } from 'oxidase'
 
 import { fallbackPrinter, jsonPrinter, yamlPrinter } from './printers/printers.ts'
 import { combinePrinters } from './printers/lib.ts'
 import { getSnapshotId, runWithContexts, type ProvidedContext } from './context.ts'
 import { register } from 'node:module'
 import { isTplFile, tplFileExtensionRegex } from './isTplFile.ts'
+import { randomUUID } from 'node:crypto'
+import {type DirContent, type Writeable, type WriteableDir} from './types.ts';
 
 register(import.meta.url + '/../register.js')
-
-function randomSuffix() {
-  return `${Date.now()}-${Math.random()}`
-}
 
 interface Inflatable {
   kind: 'inflatable'
@@ -32,6 +29,10 @@ class NonInflatable implements Inflatable {
   }
 
   withContext(..._contexts: ProvidedContext[]) {
+    return this
+  }
+
+  content() {
     return this
   }
   
@@ -58,42 +59,25 @@ class InflatableFile {
     return new InflatableFile(this.#absolutePathName, [...this.#contexts, ...contexts])
   }
 
-  async #inflate() {
+  async content() {
     const contextsSnapshoptId = getSnapshotId(this.#contexts)
-
-    // maybe memoize according to the current context stack ?
     return runWithContexts(this.#contexts, async () => {
       const originalFileName = path.join(this.#absolutePathName)
       const copyFileName = path.resolve(`${originalFileName}?context=${contextsSnapshoptId}.js`)
       
-      try {
-        const content = await fs.promises.readFile(originalFileName, 'utf-8')
-        await fs.promises.writeFile(copyFileName, transpile(content))
-        const { default: result } = await import(copyFileName)
-        return result
-      } finally {
-        await fs.promises.rm(copyFileName)
-      }
+      const { default: result } = await import(copyFileName)
+      return result
     })
   }
 
   async write(outputDir: string, outputFileName?: string) {
-    const result = await this.#inflate()
-
-    const fileName = path.basename(this.#absolutePathName)
-    const finalFileName = fileName.replace(tplFileExtensionRegex, '')
-    const printedValue = printer.print(finalFileName, result)
-
-    if(printedValue === null) {
-      throw new Error(`No printer found for ${this.#absolutePathName} and value of type ${typeof result}. Printer used: ${printer.name}`)
-    }
-    
-    return fs.promises.writeFile(path.join(outputDir, outputFileName ?? finalFileName), printedValue)
+    const fileName = outputFileName ?? path.basename(this.#absolutePathName).replace(tplFileExtensionRegex, '')
+    return writeFile(path.join(outputDir, fileName), this)
   }
 }
 
 class InflatableDir {
-  kind = 'inflatable' as const
+  '~kind' = 'dir' as const
 
   #absolutePathName: string
   #contexts: ProvidedContext[]
@@ -108,7 +92,7 @@ class InflatableDir {
     return new InflatableDir(this.#absolutePathName, [...this.#contexts, ...contexts])
   }
 
-  async #inflate() {
+  async content() {
     const inputFiles = fs.readdirSync(
       this.#absolutePathName, 
       { recursive: false }
@@ -121,33 +105,63 @@ class InflatableDir {
       // ignore if file looks like `(**)` or `(**).*`
       const isIgnored = fileName.match(/^\(.*\)(..+)?$/)
       if(isIgnored) return null
-      return {
-        fileName,
-        inflatable: inflatable.withContext(...this.#contexts)
-      }
+      return [
+        fileName.replace(tplFileExtensionRegex, ''),
+        inflatable.withContext(...this.#contexts)
+      ] as const
     }))
 
-    return files
+    return Object.fromEntries(files.filter(x => x !== null))
   }
+}
 
-  async write(outputDir: string) {
-    const tmpOutput = `${tmpdir()}/tpl.ts-${randomSuffix()}`
-    await fs.promises.mkdir(tmpOutput, { recursive: true })
-  
-    const files = await this.#inflate()
+export async function writeDir(outputDir: string, dir: WriteableDir) {
+  const tmpOutput = `${tmpdir()}/tpl.ts-${randomUUID()}`
+  await fs.promises.mkdir(tmpOutput, { recursive: true })
 
-    await Promise.all(files.map(async file => {
-      if(!file) return
-      if(file.inflatable instanceof InflatableDir) {
-        return file.inflatable.write(path.join(tmpOutput, file.fileName))
+  const files = await dir.content()
+
+  await Promise.all(Object.entries(files).map(async ([fileName, inflatable]) => {
+    if('~kind' in inflatable && inflatable['~kind'] === 'dir') {
+      return writeDir(path.join(tmpOutput, fileName), inflatable)
+    } else {
+      return writeFile(path.join(tmpOutput), inflatable)
+    }
+  }))
+
+  await fs.promises.mkdir(outputDir, { recursive: true })
+  await fs.promises.rm(outputDir, { recursive: true })
+  await fs.promises.rename(tmpOutput, outputDir)
+}
+
+export async function writeFile(outputFileName: string, writeable: Writeable) {
+    if('~kind' in writeable && writeable['~kind'] === 'dir') {
+      return writeDir(outputFileName, writeable)
+    }
+    const result = await writeable.content()
+
+    const fileName = path.basename(outputFileName)
+    const printedValue = printer.print(fileName, result)
+
+    if(printedValue === null) {
+      throw new Error(`No printer found for ${outputFileName} and value of type ${typeof result}. Printer used: ${printer.name}`)
+    }
+    
+    return fs.promises.writeFile(outputFileName, printedValue)
+}
+
+
+export async function flattenContent(dir: DirContent): Promise<Record<string, unknown>> {
+  return Object.fromEntries(
+    await Promise.all(Object.entries(dir).map(async ([key, value]) => {
+      const x = await value.content()
+      console.log(x['~kind'], x)
+      if((x && typeof x === 'object' && '~kind' in x && x['~kind'] === 'dir')) {
+        return [key, await flattenContent(x)]
       }
-      return file.inflatable.write(tmpOutput)
+      return [key, x]
     }))
-  
-    await fs.promises.mkdir(outputDir, { recursive: true })
-    await fs.promises.rm(outputDir, { recursive: true })
-    await fs.promises.rename(tmpOutput, outputDir)
-  }
+  )
 }
 
 const printer = combinePrinters([yamlPrinter(), jsonPrinter(), fallbackPrinter()])

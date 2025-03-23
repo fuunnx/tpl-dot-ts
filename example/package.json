@@ -1,7 +1,8 @@
 {
   "type": "module",
   "scripts": {
-    "build": "vite-node index.ts"
+    "build": "node index.ts",
+    "watch": "node --watch index.ts"
   },
   "exports": {
     "./": "./index.ts"
