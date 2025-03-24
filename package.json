@@ -2,7 +2,10 @@
 	"name": "tpl.ts-workspace-root",
 	"type": "module",
 	"private": true,
-	"workspaces": ["./example", "./lib"],
+	"workspaces": [
+		"./example",
+		"./lib"
+	],
 	"packageManager": "yarn@4.7.0",
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4"

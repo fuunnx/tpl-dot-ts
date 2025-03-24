@@ -1,7 +1,7 @@
 {
 	"type": "module",
 	"scripts": {
-		"build": "node index.ts",
+		"build": "node --import oxidase/register index.ts",
 		"watch": "node --watch index.ts"
 	},
 	"exports": {

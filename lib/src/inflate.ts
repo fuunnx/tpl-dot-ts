@@ -130,7 +130,7 @@ class InflatableDir<Content extends DirContent = DirContent> {
 	}
 
 	async content() {
-		return mapValuesAsync(this.#dirContent, async (inflatable) => {
+		return await mapValuesAsync(this.#dirContent, async (inflatable) => {
 			const withContext = inflatable.withContext
 				? inflatable.withContext(...this.#contexts)
 				: inflatable
@@ -154,15 +154,15 @@ async function writeDir(outputDir: string, dir: WriteableDir) {
 
 	const files = await dir.content()
 
-	await Promise.all(
-		Object.entries(files).map(async ([fileName, inflatable]) => {
-			if ('~kind' in inflatable && inflatable['~kind'] === 'dir') {
-				return writeDir(path.join(tmpOutput, fileName), inflatable)
-			} else {
-				return writeFile(path.join(tmpOutput, fileName), inflatable)
-			}
-		}),
-	)
+	await mapValuesAsync(files, async (inflatable, fileName) => {
+		if (inflatable instanceof InflatableStatic) {
+			return inflatable.write(tmpOutput, String(fileName))
+		}
+		if ('~kind' in inflatable && inflatable['~kind'] === 'dir') {
+			return writeDir(path.join(tmpOutput, String(fileName)), inflatable)
+		}
+		return writeFile(path.join(tmpOutput, String(fileName)), inflatable)
+	})
 
 	await fs.promises.mkdir(outputDir, { recursive: true })
 	await fs.promises.rm(outputDir, { recursive: true })
@@ -173,6 +173,7 @@ export async function writeFile(outputFileName: string, writeable: Writeable) {
 	// if ('~kind' in writeable && writeable['~kind'] === 'dir') {
 	// 	return writeDir(outputFileName, writeable)
 	// }
+	console.log('writeable', writeable)
 	const result = await writeable.content()
 
 	const fileName = path.basename(outputFileName)
@@ -187,27 +188,17 @@ export async function writeFile(outputFileName: string, writeable: Writeable) {
 	return fs.promises.writeFile(outputFileName, printedValue)
 }
 
-export async function flattenContent(
-	dir: DirContent,
-): Promise<Record<string, unknown>> {
-	return Object.fromEntries(
-		await Promise.all(
-			Object.entries(dir).map(async ([key, value]) => {
-				const x = await value.content()
-				console.log(x['~kind'], x)
-				if (
-					x &&
-					typeof x === 'object' &&
-					'~kind' in x &&
-					x['~kind'] === 'dir'
-				) {
-					return [key, await flattenContent(x)]
-				}
-				return [key, x]
-			}),
-		),
-	)
-}
+// export async function flattenContent(
+// 	dir: DirContent,
+// ): Promise<Record<string, unknown>> {
+// 	return mapValuesAsync(dir, async (value) => {
+// 		const x = await value.content()
+// 		if (x && typeof x === 'object' && '~kind' in x && x['~kind'] === 'dir') {
+// 			return await flattenContent(x)
+// 		}
+// 		return x
+// 	})
+// }
 
 function mapValues<T extends Record<string, any>, U>(
 	obj: T,
@@ -220,11 +211,13 @@ function mapValues<T extends Record<string, any>, U>(
 
 async function mapValuesAsync<T extends Record<string, any>, U>(
 	obj: T,
-	fn: (value: T[keyof T], key: keyof T) => U,
+	fn: (value: T[keyof T], key: keyof T) => Promise<U>,
 ): Promise<{ [key in keyof T]: U }> {
 	return Object.fromEntries(
 		await Promise.all(
-			Object.entries(obj).map(([key, value]) => [key, fn(value, key)]),
+			Object.entries(obj).map(async ([key, value]) => {
+				return [key, await fn(value, key)]
+			}),
 		),
 	) as { [key in keyof T]: U }
 }
@@ -255,17 +248,6 @@ async function fromPath(
 
 export const Tpl = {
 	from(pathName: string) {
-		if (isTplFile(pathName)) {
-			return InflatableFile.fromPath(pathName)
-		}
-
-		const stat = fs.statSync(pathName)
-		const isDir = stat.isDirectory()
-
-		if (isDir) {
-			return InflatableDir.fromPath(pathName)
-		}
-
-		return InflatableStatic.fromPath(pathName)
+		return fromPath(pathName)
 	},
 }

@@ -1,6 +1,5 @@
 import { docker } from './define/docker.ts'
 import { defineDotenv } from './define/dotenv.ts'
-import { writeDir } from './inflate.ts'
 import type { DirContent, WriteableDir } from './types.ts'
 import type { Inflatable } from './types.ts'
 

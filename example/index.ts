@@ -2,7 +2,6 @@ import {
 	Tpl,
 	createContext,
 	defineDir,
-	flattenContent,
 	memoize,
 	overloadConfig,
 	parseArgs,
@@ -85,7 +84,7 @@ const createConfig = memoize((target: Target) => {
 export const configContext =
 	createContext<ReturnType<typeof createConfig>>('config')
 
-const input = Tpl.from('./input')
+const input = await Tpl.from('./input')
 
 const dir = defineDir<Record<Target, Writeable>>({
 	development: input.withContext(
@@ -100,19 +99,10 @@ const dir = defineDir<Record<Target, Writeable>>({
 	),
 })
 
-console.log(await flattenContent(await dir.content()))
-console.time('execution time')
-// await dir.write(args.output)
-console.timeEnd('execution time')
-// Promise.all([
-//   input.withContext(configContext.provide(createConfig('development')))
-//     .write(`${args.output}/development`),
-//   input.withContext(configContext.provide(createConfig('integ')))
-//     .write(`${args.output}/integ`),
-//   input.withContext(configContext.provide(createConfig('preproduction')))
-//     .write(`${args.output}/preproduction`),
-//   input.withContext(configContext.provide(createConfig('production')))
-//     .write(`${args.output}/production`),
-// ]).finally(() => {
-//   console.timeEnd('execution time')
-// })
+Promise.resolve().then(async () => {
+	console.time('execution time')
+	const content = await dir.content()
+	await dir.write('./output')
+	console.log(content)
+	console.timeEnd('execution time')
+})

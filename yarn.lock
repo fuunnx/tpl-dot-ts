@@ -479,6 +479,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/proxymise@npm:^1":
+  version: 1.0.3
+  resolution: "@types/proxymise@npm:1.0.3"
+  checksum: 10c0/9dc47b46f6987c1a3727ca0e5b222b93a0d10ef7d9ca7745ece282cf25af72907764b4308a47844f893d850c890f9bf26dbcde7864843cb53aba740569be4cfd
+  languageName: node
+  linkType: hard
+
 "abbrev@npm:^3.0.0":
   version: 3.0.0
   resolution: "abbrev@npm:3.0.0"
@@ -1258,6 +1265,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"proxymise@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "proxymise@npm:1.0.2"
+  checksum: 10c0/4e4cab942abb2811fcd724392c31c21042490bcbf7b82c1237a8373871cd863149a520dbfffeabe23924eea2abf1ad08edca8b60be7de681942cb5ce24fff9ed
+  languageName: node
+  linkType: hard
+
 "require-directory@npm:^2.1.1":
   version: 2.1.1
   resolution: "require-directory@npm:2.1.1"
@@ -1549,9 +1563,11 @@ __metadata:
   resolution: "tpl.ts@workspace:lib"
   dependencies:
     "@types/node": "npm:^22.13.10"
+    "@types/proxymise": "npm:^1"
     commander: "npm:^13.1.0"
     compose-spec-schema: "npm:^1.0.0"
     oxidase: "npm:^0.0.3"
+    proxymise: "npm:^1.0.2"
     yaml: "npm:^2.7.0"
     zod: "npm:^3.24.2"
   languageName: unknown
