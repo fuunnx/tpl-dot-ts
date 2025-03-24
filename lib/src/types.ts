@@ -1,5 +1,8 @@
+import { type ProvidedContext } from './context.ts'
+
 interface AnyWriteable<T = unknown> {
 	content: () => T | Promise<T>
+	withContext?: (...contexts: ProvidedContext[]) => AnyWriteable<T>
 }
 
 export type Writeable = AnyWriteable | WriteableDir

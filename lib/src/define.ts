@@ -8,17 +8,3 @@ export const define = {
 	docker,
 	dotenv: defineDotenv,
 }
-
-export function defineDir<T extends DirContent>(
-	entries: T,
-): WriteableDir & Inflatable {
-	return {
-		'~kind': 'dir',
-		content() {
-			return entries
-		},
-		write(outputDir: string) {
-			return writeDir(outputDir, this)
-		},
-	}
-}

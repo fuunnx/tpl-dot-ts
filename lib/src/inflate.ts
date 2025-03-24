@@ -20,20 +20,19 @@ import type { DirContent, Writeable, WriteableDir } from './types.ts'
 
 register(import.meta.url + '/../register.js')
 
-interface Inflatable {
-	kind: 'inflatable'
+type AnyInflatable = InflatableStatic | InflatableFile | InflatableDir
 
-	withContext(context: ProvidedContext): this
-	write(outputDir: string, outputFileName?: string): Promise<void>
-}
+class InflatableStatic {
+	#pathName: string
 
-class NonInflatable implements Inflatable {
-	kind = 'inflatable' as const
+	private constructor(pathName: string) {
+		this.#pathName = pathName
+	}
 
-	#absolutePathName: string
-
-	constructor(absolutePathName: string) {
-		this.#absolutePathName = absolutePathName
+	static async fromPath(pathName: string) {
+		// check if exists
+		await fs.promises.stat(pathName)
+		return new InflatableStatic(pathName)
 	}
 
 	withContext(..._contexts: ProvidedContext[]) {
@@ -46,37 +45,35 @@ class NonInflatable implements Inflatable {
 
 	async write(outputDir: string, outputFileName?: string) {
 		await fs.promises.copyFile(
-			path.join(this.#absolutePathName),
-			path.join(
-				outputDir,
-				outputFileName ?? path.basename(this.#absolutePathName),
-			),
+			path.join(this.#pathName),
+			path.join(outputDir, outputFileName ?? path.basename(this.#pathName)),
 		)
 	}
 }
 
 class InflatableFile {
-	kind = 'inflatable' as const
-
-	#absolutePathName: string
+	#pathName: string
 	#contexts: ProvidedContext[]
 
-	constructor(absolutePathName: string, contexts: ProvidedContext[] = []) {
-		this.#absolutePathName = absolutePathName
+	private constructor(pathName: string, contexts: ProvidedContext[] = []) {
+		this.#pathName = pathName
 		this.#contexts = contexts
 	}
 
+	static async fromPath(pathName: string) {
+		// check if exists
+		await fs.promises.stat(pathName)
+		return new InflatableFile(pathName)
+	}
+
 	withContext(...contexts: ProvidedContext[]) {
-		return new InflatableFile(this.#absolutePathName, [
-			...this.#contexts,
-			...contexts,
-		])
+		return new InflatableFile(this.#pathName, [...this.#contexts, ...contexts])
 	}
 
 	async content() {
 		const contextsSnapshoptId = getSnapshotId(this.#contexts)
 		return runWithContexts(this.#contexts, async () => {
-			const originalFileName = path.join(this.#absolutePathName)
+			const originalFileName = this.#pathName
 			const copyFileName = path.resolve(
 				`${originalFileName}?context=${contextsSnapshoptId}.js`,
 			)
@@ -86,59 +83,72 @@ class InflatableFile {
 		})
 	}
 
-	async write(outputDir: string, outputFileName?: string) {
-		const fileName =
-			outputFileName ??
-			path.basename(this.#absolutePathName).replace(tplFileExtensionRegex, '')
-		return writeFile(path.join(outputDir, fileName), this)
+	async write(outputFileName: string) {
+		return writeFile(outputFileName, this)
 	}
 }
 
-class InflatableDir {
-	'~kind' = 'dir' as const
+class InflatableDir<Content extends DirContent = DirContent> {
+	'~kind': 'dir' = 'dir'
 
-	#absolutePathName: string
+	#dirContent: Content
 	#contexts: ProvidedContext[]
 
-	constructor(absolutePathName: string, contexts: ProvidedContext[] = []) {
-		this.#absolutePathName = absolutePathName
+	constructor(dirContent: Content, contexts: ProvidedContext[] = []) {
+		this.#dirContent = dirContent
 		this.#contexts = contexts
 	}
 
 	withContext(...contexts: ProvidedContext[]) {
-		return new InflatableDir(this.#absolutePathName, [
-			...this.#contexts,
-			...contexts,
-		])
+		return new InflatableDir(this.#dirContent, [...this.#contexts, ...contexts])
 	}
 
-	async content() {
-		const inputFiles = fs.readdirSync(this.#absolutePathName, {
+	static async fromPath(pathName: string) {
+		const inputFiles = fs.readdirSync(pathName, {
 			recursive: false,
 		})
 
 		const files = await Promise.all(
-			inputFiles.map(async (fileName) => {
-				fileName = fileName.toString()
-				const inflatable = await inflateAsync(
-					path.join(this.#absolutePathName, fileName),
-				)
+			inputFiles.map(
+				async (fileName): Promise<[string, AnyInflatable] | null> => {
+					fileName = fileName.toString()
 
-				// ignore if file looks like `(**)` or `(**).*`
-				const isIgnored = fileName.match(/^\(.*\)(..+)?$/)
-				if (isIgnored) return null
-				return [
-					fileName.replace(tplFileExtensionRegex, ''),
-					inflatable.withContext(...this.#contexts),
-				] as const
-			}),
+					// ignore if file looks like `(**)` or `(**).*`
+					const isIgnored = fileName.match(/^\(.*\)(..+)?$/)
+					if (isIgnored) return null
+					return [
+						fileName.replace(tplFileExtensionRegex, ''),
+						await fromPath(path.join(pathName, fileName)),
+					] as const
+				},
+			),
 		)
 
-		return Object.fromEntries(files.filter((x) => x !== null))
+		const dirContent = Object.fromEntries(files.filter((x) => x !== null))
+
+		return new InflatableDir(dirContent)
+	}
+
+	async content() {
+		return mapValuesAsync(this.#dirContent, async (inflatable) => {
+			const withContext = inflatable.withContext
+				? inflatable.withContext(...this.#contexts)
+				: inflatable
+
+			return await withContext.content()
+		})
+	}
+
+	async write(outputDir: string) {
+		return writeDir(outputDir, this)
 	}
 }
 
-export async function writeDir(outputDir: string, dir: WriteableDir) {
+export function defineDir<T extends DirContent>(entries: T) {
+	return new InflatableDir(entries)
+}
+
+async function writeDir(outputDir: string, dir: WriteableDir) {
 	const tmpOutput = `${tmpdir()}/tpl.ts-${randomUUID()}`
 	await fs.promises.mkdir(tmpOutput, { recursive: true })
 
@@ -149,7 +159,7 @@ export async function writeDir(outputDir: string, dir: WriteableDir) {
 			if ('~kind' in inflatable && inflatable['~kind'] === 'dir') {
 				return writeDir(path.join(tmpOutput, fileName), inflatable)
 			} else {
-				return writeFile(path.join(tmpOutput), inflatable)
+				return writeFile(path.join(tmpOutput, fileName), inflatable)
 			}
 		}),
 	)
@@ -160,9 +170,9 @@ export async function writeDir(outputDir: string, dir: WriteableDir) {
 }
 
 export async function writeFile(outputFileName: string, writeable: Writeable) {
-	if ('~kind' in writeable && writeable['~kind'] === 'dir') {
-		return writeDir(outputFileName, writeable)
-	}
+	// if ('~kind' in writeable && writeable['~kind'] === 'dir') {
+	// 	return writeDir(outputFileName, writeable)
+	// }
 	const result = await writeable.content()
 
 	const fileName = path.basename(outputFileName)
@@ -199,42 +209,63 @@ export async function flattenContent(
 	)
 }
 
+function mapValues<T extends Record<string, any>, U>(
+	obj: T,
+	fn: (value: T[keyof T], key: keyof T) => U,
+): { [key in keyof T]: U } {
+	return Object.fromEntries(
+		Object.entries(obj).map(([key, value]) => [key, fn(value, key)]),
+	) as { [key in keyof T]: U }
+}
+
+async function mapValuesAsync<T extends Record<string, any>, U>(
+	obj: T,
+	fn: (value: T[keyof T], key: keyof T) => U,
+): Promise<{ [key in keyof T]: U }> {
+	return Object.fromEntries(
+		await Promise.all(
+			Object.entries(obj).map(([key, value]) => [key, fn(value, key)]),
+		),
+	) as { [key in keyof T]: U }
+}
+
 const printer = combinePrinters([
 	yamlPrinter(),
 	jsonPrinter(),
 	fallbackPrinter(),
 ])
 
-/** same version as `inflate`, but async for better performance */
-async function inflateAsync(absolutePathName: string) {
-	if (isTplFile(absolutePathName)) {
-		return new InflatableFile(absolutePathName)
+/** same version as `Tpl.from`, but async for better performance */
+async function fromPath(
+	pathName: string,
+): Promise<InflatableFile | InflatableStatic | InflatableDir> {
+	if (isTplFile(pathName)) {
+		return InflatableFile.fromPath(pathName)
 	}
 
-	const stat = await fs.promises.stat(absolutePathName)
+	const stat = await fs.promises.stat(pathName)
 	const isDir = stat.isDirectory()
 
 	if (isDir) {
-		return new InflatableDir(absolutePathName)
+		return InflatableDir.fromPath(pathName)
 	}
 
-	return new NonInflatable(absolutePathName)
+	return InflatableStatic.fromPath(pathName)
 }
 
-/** same version as `inflateAsync`, but sync for end user convenience */
 export const Tpl = {
-	from(absolutePathName: string) {
-		if (isTplFile(absolutePathName)) {
-			return new InflatableFile(absolutePathName)
+	from(pathName: string) {
+		if (isTplFile(pathName)) {
+			return InflatableFile.fromPath(pathName)
 		}
 
-		const stat = fs.statSync(absolutePathName)
+		const stat = fs.statSync(pathName)
 		const isDir = stat.isDirectory()
 
 		if (isDir) {
-			return new InflatableDir(absolutePathName)
+			return InflatableDir.fromPath(pathName)
 		}
 
-		return new NonInflatable(absolutePathName)
+		return InflatableStatic.fromPath(pathName)
 	},
 }
