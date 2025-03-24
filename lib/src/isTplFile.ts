@@ -1,5 +1,5 @@
 export const tplFileExtensionRegex = /\.tpl\.[tj]s$/
 
 export function isTplFile(fileName: string): boolean {
-  return tplFileExtensionRegex.test(fileName)
+	return tplFileExtensionRegex.test(fileName)
 }

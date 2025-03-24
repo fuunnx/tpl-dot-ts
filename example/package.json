@@ -1,21 +1,21 @@
 {
-  "type": "module",
-  "scripts": {
-    "build": "node index.ts",
-    "watch": "node --watch index.ts"
-  },
-  "exports": {
-    "./": "./index.ts"
-  },
-  "imports": {
-    "#tpl": "./index.ts"
-  },
-  "dependencies": {
-    "tpl.ts": "workspace:^"
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.2",
-    "typescript": "^5.8.2",
-    "vite-node": "^3.0.9"
-  }
+	"type": "module",
+	"scripts": {
+		"build": "node index.ts",
+		"watch": "node --watch index.ts"
+	},
+	"exports": {
+		"./": "./index.ts"
+	},
+	"imports": {
+		"#tpl": "./index.ts"
+	},
+	"dependencies": {
+		"tpl.ts": "workspace:^"
+	},
+	"devDependencies": {
+		"concurrently": "^9.1.2",
+		"typescript": "^5.8.2",
+		"vite-node": "^3.0.9"
+	}
 }

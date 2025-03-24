@@ -1,6 +1,4 @@
-
-
 export type Printer = {
-  name: string
-  print: (fileName: string, data: unknown) => string | null
+	name: string
+	print: (fileName: string, data: unknown) => string | null
 }

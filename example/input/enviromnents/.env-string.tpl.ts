@@ -1,4 +1,4 @@
-import { configContext, args } from '../../index.ts';
+import { args, configContext } from '../../index.ts'
 
 const config = configContext.consume()
 

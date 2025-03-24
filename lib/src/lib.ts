@@ -1,5 +1,5 @@
 function run<T>(func: () => T): T {
-  return func()
+	return func()
 }
 
 export { run }
