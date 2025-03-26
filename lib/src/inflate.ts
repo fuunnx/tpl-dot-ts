@@ -16,13 +16,14 @@ import {
 	jsonPrinter,
 	yamlPrinter,
 } from './printers/printers.ts'
-import type { DirContent, Writeable, WriteableDir } from './types.ts'
+import { familySym, kindSym, Taxonomy, type IInflatableFile, type IInflatableReference, type InflatableDirContent, type Writeable, type WriteableDir } from './types.ts'
 
 register(import.meta.url + '/../register.js')
 
-type AnyInflatable = InflatableStatic | InflatableFile | InflatableDir
+class InflatableReference implements IInflatableReference {
+  readonly [familySym] = Taxonomy.FamilyEnum.inflatable;
+  readonly [kindSym] = Taxonomy.KindEnum.reference;
 
-class InflatableStatic {
 	#pathName: string
 
 	private constructor(pathName: string) {
@@ -32,7 +33,7 @@ class InflatableStatic {
 	static async fromPath(pathName: string) {
 		// check if exists
 		await fs.promises.stat(pathName)
-		return new InflatableStatic(pathName)
+		return new this(pathName)
 	}
 
 	withContext(..._contexts: ProvidedContext[]) {
@@ -40,18 +41,21 @@ class InflatableStatic {
 	}
 
 	content() {
-		return this
+		return this.#pathName
 	}
 
-	async write(outputDir: string, outputFileName?: string) {
+	async write(output: string) {
 		await fs.promises.copyFile(
-			path.join(this.#pathName),
-			path.join(outputDir, outputFileName ?? path.basename(this.#pathName)),
+			path.join(this.content()),
+			output,
 		)
 	}
 }
 
-class InflatableFile {
+class InflatableFile implements IInflatableFile {
+  readonly [familySym] = Taxonomy.FamilyEnum.inflatable;
+  readonly [kindSym] = Taxonomy.KindEnum.file;
+
 	#pathName: string
 	#contexts: ProvidedContext[]
 
@@ -88,8 +92,9 @@ class InflatableFile {
 	}
 }
 
-class InflatableDir<Content extends DirContent = DirContent> {
-	'~kind': 'dir' = 'dir'
+class InflatableDir<Content extends InflatableDirContent = InflatableDirContent> {
+  readonly [familySym] = Taxonomy.FamilyEnum.inflatable;
+  readonly [kindSym] = Taxonomy.KindEnum.dir;
 
 	#dirContent: Content
 	#contexts: ProvidedContext[]
@@ -118,7 +123,7 @@ class InflatableDir<Content extends DirContent = DirContent> {
 					if (isIgnored) return null
 					return [
 						fileName.replace(tplFileExtensionRegex, ''),
-						await fromPath(path.join(pathName, fileName)),
+						await Tpl.from(path.join(pathName, fileName)),
 					] as const
 				},
 			),
@@ -129,7 +134,7 @@ class InflatableDir<Content extends DirContent = DirContent> {
 		return new InflatableDir(dirContent)
 	}
 
-	async content() {
+	async content: WriteableDir() {
 		return await mapValuesAsync(this.#dirContent, async (inflatable) => {
 			const withContext = inflatable.withContext
 				? inflatable.withContext(...this.#contexts)
@@ -155,7 +160,7 @@ async function writeDir(outputDir: string, dir: WriteableDir) {
 	const files = await dir.content()
 
 	await mapValuesAsync(files, async (inflatable, fileName) => {
-		if (inflatable instanceof InflatableStatic) {
+		if (inflatable instanceof InflatableReference) {
 			return inflatable.write(tmpOutput, String(fileName))
 		}
 		if ('~kind' in inflatable && inflatable['~kind'] === 'dir') {
@@ -228,26 +233,21 @@ const printer = combinePrinters([
 	fallbackPrinter(),
 ])
 
-/** same version as `Tpl.from`, but async for better performance */
-async function fromPath(
-	pathName: string,
-): Promise<InflatableFile | InflatableStatic | InflatableDir> {
-	if (isTplFile(pathName)) {
-		return InflatableFile.fromPath(pathName)
-	}
-
-	const stat = await fs.promises.stat(pathName)
-	const isDir = stat.isDirectory()
-
-	if (isDir) {
-		return InflatableDir.fromPath(pathName)
-	}
-
-	return InflatableStatic.fromPath(pathName)
-}
-
 export const Tpl = {
-	from(pathName: string) {
-		return fromPath(pathName)
+	async from(
+		pathName: string,
+	): Promise<InflatableFile | InflatableStatic | InflatableDir> {
+		if (isTplFile(pathName)) {
+			return InflatableFile.fromPath(pathName)
+		}
+
+		const stat = await fs.promises.stat(pathName)
+		const isDir = stat.isDirectory()
+
+		if (isDir) {
+			return InflatableDir.fromPath(pathName)
+		}
+
+		return InflatableStatic.fromPath(pathName)
 	},
 }
