@@ -5,8 +5,8 @@ import {
 	memoize,
 	overloadConfig,
 	parseArgs,
+	type Inflatable,
 } from 'tpl.ts'
-import type { Writeable, WriteableDir } from '../lib/src/types.ts'
 
 export const args = parseArgs({
 	input: './input',
@@ -86,7 +86,7 @@ export const configContext =
 
 const input = await Tpl.from('./input')
 
-const dir = defineDir<Record<Target, Writeable>>({
+const dir = defineDir<Record<Target, Inflatable>>({
 	development: input.withContext(
 		configContext.provide(createConfig('development')),
 	),
@@ -101,8 +101,6 @@ const dir = defineDir<Record<Target, Writeable>>({
 
 Promise.resolve().then(async () => {
 	console.time('execution time')
-	const content = await dir.content()
 	await dir.write('./output')
-	console.log(content)
 	console.timeEnd('execution time')
 })

@@ -16,13 +16,26 @@ import {
 	jsonPrinter,
 	yamlPrinter,
 } from './printers/printers.ts'
-import { familySym, kindSym, Taxonomy, type IInflatableFile, type IInflatableReference, type InflatableDirContent, type Writeable, type WriteableDir } from './types.ts'
+import {
+	familySym,
+	kindSym,
+	Taxonomy,
+	type Inflate,
+	type IInflatableFile,
+	type IInflatableReference,
+	type Inflatable,
+	type InflatableDirContent,
+	type Writeable,
+	type WriteableDir,
+	type WriteableFile,
+	type WriteableReference,
+} from './types.ts'
 
 register(import.meta.url + '/../register.js')
 
 class InflatableReference implements IInflatableReference {
-  readonly [familySym] = Taxonomy.FamilyEnum.inflatable;
-  readonly [kindSym] = Taxonomy.KindEnum.reference;
+	readonly [familySym] = Taxonomy.FamilyEnum.inflatable
+	readonly [kindSym] = Taxonomy.KindEnum.reference
 
 	#pathName: string
 
@@ -44,17 +57,22 @@ class InflatableReference implements IInflatableReference {
 		return this.#pathName
 	}
 
+	async toWritable(): Promise<WriteableReference> {
+		return {
+			[familySym]: Taxonomy.FamilyEnum.writeable,
+			[kindSym]: Taxonomy.KindEnum.reference,
+			path: this.#pathName,
+		}
+	}
+
 	async write(output: string) {
-		await fs.promises.copyFile(
-			path.join(this.content()),
-			output,
-		)
+		return writeReference(await this.toWritable(), output)
 	}
 }
 
 class InflatableFile implements IInflatableFile {
-  readonly [familySym] = Taxonomy.FamilyEnum.inflatable;
-  readonly [kindSym] = Taxonomy.KindEnum.file;
+	readonly [familySym] = Taxonomy.FamilyEnum.inflatable
+	readonly [kindSym] = Taxonomy.KindEnum.file
 
 	#pathName: string
 	#contexts: ProvidedContext[]
@@ -87,14 +105,76 @@ class InflatableFile implements IInflatableFile {
 		})
 	}
 
+	async toWritable(outputFileName: string): Promise<WriteableFile> {
+		return toWritable(this, outputFileName)
+	}
+
 	async write(outputFileName: string) {
-		return writeFile(outputFileName, this)
+		return writeFile(await this.toWritable(outputFileName), outputFileName)
 	}
 }
 
-class InflatableDir<Content extends InflatableDirContent = InflatableDirContent> {
-  readonly [familySym] = Taxonomy.FamilyEnum.inflatable;
-  readonly [kindSym] = Taxonomy.KindEnum.dir;
+const printer = combinePrinters([
+	yamlPrinter(),
+	jsonPrinter(),
+	fallbackPrinter(),
+])
+function print(outputFileName: string, content: unknown) {
+	const fileName = path.basename(outputFileName)
+	const printedValue = printer.print(fileName, content)
+
+	if (printedValue === null) {
+		throw new Error(
+			`No printer found for ${outputFileName} and value of type ${typeof content}. Printer used: ${printer.name}`,
+		)
+	}
+
+	return printedValue
+}
+
+async function toWritable<T extends Inflatable>(
+	inflatable: T,
+	outputFileName: string,
+): Promise<Inflate<T>> {
+	if (inflatable[kindSym] === Taxonomy.KindEnum.file) {
+		return {
+			[familySym]: Taxonomy.FamilyEnum.writeable,
+			[kindSym]: Taxonomy.KindEnum.file,
+			content: print(outputFileName, await inflatable.content()),
+		} satisfies WriteableFile as Inflate<T>
+	}
+
+	if (inflatable[kindSym] === Taxonomy.KindEnum.reference) {
+		return {
+			[familySym]: Taxonomy.FamilyEnum.writeable,
+			[kindSym]: Taxonomy.KindEnum.reference,
+			path: await inflatable.content(),
+		} satisfies WriteableReference as Inflate<T>
+	}
+
+	if (inflatable[kindSym] === Taxonomy.KindEnum.dir) {
+		const content: WriteableDir['content'] = await mapValuesAsync(
+			await inflatable.content(),
+			(value, key) => {
+				return toWritable(value, key)
+			},
+		)
+
+		return {
+			[familySym]: Taxonomy.FamilyEnum.writeable,
+			[kindSym]: Taxonomy.KindEnum.dir,
+			content,
+		} satisfies WriteableDir as Inflate<T>
+	}
+
+	throw new Error(`Unknown kind ${inflatable[kindSym]}`)
+}
+
+class InflatableDir<
+	Content extends InflatableDirContent = InflatableDirContent,
+> {
+	readonly [familySym] = Taxonomy.FamilyEnum.inflatable
+	readonly [kindSym] = Taxonomy.KindEnum.dir
 
 	#dirContent: Content
 	#contexts: ProvidedContext[]
@@ -114,19 +194,17 @@ class InflatableDir<Content extends InflatableDirContent = InflatableDirContent>
 		})
 
 		const files = await Promise.all(
-			inputFiles.map(
-				async (fileName): Promise<[string, AnyInflatable] | null> => {
-					fileName = fileName.toString()
+			inputFiles.map(async (fileName): Promise<[string, Inflatable] | null> => {
+				fileName = fileName.toString()
 
-					// ignore if file looks like `(**)` or `(**).*`
-					const isIgnored = fileName.match(/^\(.*\)(..+)?$/)
-					if (isIgnored) return null
-					return [
-						fileName.replace(tplFileExtensionRegex, ''),
-						await Tpl.from(path.join(pathName, fileName)),
-					] as const
-				},
-			),
+				// ignore if file looks like `(**)` or `(**).*`
+				const isIgnored = fileName.match(/^\(.*\)(..+)?$/)
+				if (isIgnored) return null
+				return [
+					fileName.replace(tplFileExtensionRegex, ''),
+					await Tpl.from(path.join(pathName, fileName)),
+				] as const
+			}),
 		)
 
 		const dirContent = Object.fromEntries(files.filter((x) => x !== null))
@@ -134,39 +212,53 @@ class InflatableDir<Content extends InflatableDirContent = InflatableDirContent>
 		return new InflatableDir(dirContent)
 	}
 
-	async content: WriteableDir() {
-		return await mapValuesAsync(this.#dirContent, async (inflatable) => {
-			const withContext = inflatable.withContext
-				? inflatable.withContext(...this.#contexts)
-				: inflatable
+	async content(): Promise<Content> {
+		return (await mapValuesAsync(
+			this.#dirContent,
+			async (inflatable): Promise<typeof inflatable> => {
+				const withContext = inflatable.withContext
+					? inflatable.withContext(...this.#contexts)
+					: inflatable
 
-			return await withContext.content()
-		})
+				return withContext as typeof inflatable
+			},
+		)) as Content
+	}
+
+	async toWritable(): Promise<WriteableDir> {
+		return toWritable(this, '')
 	}
 
 	async write(outputDir: string) {
-		return writeDir(outputDir, this)
+		return writeDir(await this.toWritable(), outputDir)
 	}
 }
 
-export function defineDir<T extends DirContent>(entries: T) {
+export function defineDir<T extends InflatableDirContent>(entries: T) {
 	return new InflatableDir(entries)
 }
 
-async function writeDir(outputDir: string, dir: WriteableDir) {
+async function writeWriteable(writeable: Writeable, outputName: string) {
+	switch (writeable[kindSym]) {
+		case Taxonomy.KindEnum.reference:
+			return writeReference(writeable, outputName)
+		case Taxonomy.KindEnum.dir:
+			return writeDir(writeable, outputName)
+		case Taxonomy.KindEnum.file:
+			return writeFile(writeable, outputName)
+		default:
+			throw new Error(`Unknown kind ${writeable[kindSym]}`)
+	}
+}
+
+async function writeDir(dir: WriteableDir, outputDir: string) {
 	const tmpOutput = `${tmpdir()}/tpl.ts-${randomUUID()}`
 	await fs.promises.mkdir(tmpOutput, { recursive: true })
 
-	const files = await dir.content()
+	const files = dir.content
 
-	await mapValuesAsync(files, async (inflatable, fileName) => {
-		if (inflatable instanceof InflatableReference) {
-			return inflatable.write(tmpOutput, String(fileName))
-		}
-		if ('~kind' in inflatable && inflatable['~kind'] === 'dir') {
-			return writeDir(path.join(tmpOutput, String(fileName)), inflatable)
-		}
-		return writeFile(path.join(tmpOutput, String(fileName)), inflatable)
+	await mapValuesAsync(files, async (writeable, fileName) => {
+		return writeWriteable(writeable, path.join(tmpOutput, String(fileName)))
 	})
 
 	await fs.promises.mkdir(outputDir, { recursive: true })
@@ -174,23 +266,15 @@ async function writeDir(outputDir: string, dir: WriteableDir) {
 	await fs.promises.rename(tmpOutput, outputDir)
 }
 
-export async function writeFile(outputFileName: string, writeable: Writeable) {
-	// if ('~kind' in writeable && writeable['~kind'] === 'dir') {
-	// 	return writeDir(outputFileName, writeable)
-	// }
-	console.log('writeable', writeable)
-	const result = await writeable.content()
+async function writeReference(
+	writeable: WriteableReference,
+	outputFileName: string,
+) {
+	await fs.promises.copyFile(writeable.path, outputFileName)
+}
 
-	const fileName = path.basename(outputFileName)
-	const printedValue = printer.print(fileName, result)
-
-	if (printedValue === null) {
-		throw new Error(
-			`No printer found for ${outputFileName} and value of type ${typeof result}. Printer used: ${printer.name}`,
-		)
-	}
-
-	return fs.promises.writeFile(outputFileName, printedValue)
+async function writeFile(writeable: WriteableFile, outputFileName: string) {
+	return fs.promises.writeFile(outputFileName, writeable.content)
 }
 
 // export async function flattenContent(
@@ -227,16 +311,10 @@ async function mapValuesAsync<T extends Record<string, any>, U>(
 	) as { [key in keyof T]: U }
 }
 
-const printer = combinePrinters([
-	yamlPrinter(),
-	jsonPrinter(),
-	fallbackPrinter(),
-])
-
 export const Tpl = {
 	async from(
 		pathName: string,
-	): Promise<InflatableFile | InflatableStatic | InflatableDir> {
+	): Promise<InflatableFile | InflatableReference | InflatableDir> {
 		if (isTplFile(pathName)) {
 			return InflatableFile.fromPath(pathName)
 		}
@@ -248,6 +326,6 @@ export const Tpl = {
 			return InflatableDir.fromPath(pathName)
 		}
 
-		return InflatableStatic.fromPath(pathName)
+		return InflatableReference.fromPath(pathName)
 	},
 }

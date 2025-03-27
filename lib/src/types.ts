@@ -38,7 +38,7 @@ export interface WriteableDir<
 
 export interface WriteableFile {
 	readonly [familySym]: Taxonomy.FamilyEnum.writeable
-	readonly [kindSym]: Taxonomy.KindEnum.dir
+	readonly [kindSym]: Taxonomy.KindEnum.file
 	content: string // maybe implement stream interface too for better perf ?
 }
 
