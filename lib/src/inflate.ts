@@ -33,7 +33,7 @@ import {
 
 register(import.meta.url + '/../register.js')
 
-class InflatableReference implements IInflatableReference {
+export class InflatableReference implements IInflatableReference {
 	readonly [familySym] = Taxonomy.FamilyEnum.inflatable
 	readonly [kindSym] = Taxonomy.KindEnum.reference
 
@@ -70,7 +70,7 @@ class InflatableReference implements IInflatableReference {
 	}
 }
 
-class InflatableFile implements IInflatableFile {
+export class InflatableFile implements IInflatableFile {
 	readonly [familySym] = Taxonomy.FamilyEnum.inflatable
 	readonly [kindSym] = Taxonomy.KindEnum.file
 
@@ -132,11 +132,36 @@ function print(outputFileName: string, content: unknown) {
 	return printedValue
 }
 
+function isInflatable(value: unknown): value is Inflatable {
+	return (
+		value !== null &&
+		typeof value === 'object' &&
+		familySym in value &&
+		value[familySym] === Taxonomy.FamilyEnum.inflatable
+	)
+}
+function isWriteable(value: unknown): value is Writeable {
+	return (
+		value !== null &&
+		typeof value === 'object' &&
+		familySym in value &&
+		value[familySym] === Taxonomy.FamilyEnum.writeable
+	)
+}
+
 async function toWritable<T extends Inflatable>(
 	inflatable: T,
 	outputFileName: string,
 ): Promise<Inflate<T>> {
 	if (inflatable[kindSym] === Taxonomy.KindEnum.file) {
+		const content = await inflatable.content()
+		if (isInflatable(content)) {
+			return (await toWritable(content, outputFileName)) as Inflate<T>
+		}
+		if (isWriteable(content)) {
+			return content as Inflate<T>
+		}
+
 		return {
 			[familySym]: Taxonomy.FamilyEnum.writeable,
 			[kindSym]: Taxonomy.KindEnum.file,
@@ -170,7 +195,7 @@ async function toWritable<T extends Inflatable>(
 	throw new Error(`Unknown kind ${inflatable[kindSym]}`)
 }
 
-class InflatableDir<
+export class InflatableDir<
 	Content extends InflatableDirContent = InflatableDirContent,
 > {
 	readonly [familySym] = Taxonomy.FamilyEnum.inflatable
@@ -186,6 +211,10 @@ class InflatableDir<
 
 	withContext(...contexts: ProvidedContext[]) {
 		return new InflatableDir(this.#dirContent, [...this.#contexts, ...contexts])
+	}
+
+	static fromEntries<Content extends InflatableDirContent>(entries: Content) {
+		return new InflatableDir(entries)
 	}
 
 	static async fromPath(pathName: string) {
@@ -232,10 +261,6 @@ class InflatableDir<
 	async write(outputDir: string) {
 		return writeDir(await this.toWritable(), outputDir)
 	}
-}
-
-export function defineDir<T extends InflatableDirContent>(entries: T) {
-	return new InflatableDir(entries)
 }
 
 async function writeWriteable(writeable: Writeable, outputName: string) {
