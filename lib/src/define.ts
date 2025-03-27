@@ -3,7 +3,6 @@ import { defineDotenv } from './define/dotenv.ts'
 import { InflatableDir } from './inflate.ts'
 import {
 	type InflatableDirContent,
-	type IInflatableDir,
 	type IInflatableFile,
 	familySym,
 	Taxonomy,
