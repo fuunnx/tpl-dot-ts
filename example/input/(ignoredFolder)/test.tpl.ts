@@ -1,4 +1,4 @@
-import { configContext } from '#tpl'
+import { configContext } from '../../config.ts'
 
 const config = configContext.consume()
 

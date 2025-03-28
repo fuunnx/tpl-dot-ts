@@ -1,5 +1,5 @@
 import { define } from 'tpl.ts'
-import { args, configContext } from '#tpl'
+import { args, configContext } from '../../config.ts'
 
 const config = configContext.consume()
 

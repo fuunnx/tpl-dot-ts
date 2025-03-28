@@ -3,7 +3,7 @@
 // import { config } from '#runtime';
 
 import { define, lib } from 'tpl.ts'
-import { args, configContext } from '#tpl'
+import { args, configContext } from '../config.ts'
 
 const config = configContext.consume()
 const { docker, vars, prefix, target } = config

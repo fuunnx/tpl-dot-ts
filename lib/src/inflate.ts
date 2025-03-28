@@ -30,6 +30,7 @@ import {
 	type WriteableFile,
 	type WriteableReference,
 } from './types.ts'
+import { fileURLToPath } from 'node:url'
 
 register(import.meta.url + '/../register.js')
 
@@ -44,6 +45,7 @@ export class InflatableReference implements IInflatableReference {
 	}
 
 	static async fromPath(pathName: string) {
+    pathName = normalizePath(pathName)
 		// check if exists
 		await fs.promises.stat(pathName)
 		return new this(pathName)
@@ -83,6 +85,7 @@ export class InflatableFile implements IInflatableFile {
 	}
 
 	static async fromPath(pathName: string) {
+    pathName = normalizePath(pathName)
 		// check if exists
 		await fs.promises.stat(pathName)
 		return new InflatableFile(pathName)
@@ -218,6 +221,7 @@ export class InflatableDir<
 	}
 
 	static async fromPath(pathName: string) {
+    pathName = normalizePath(pathName)
 		const inputFiles = fs.readdirSync(pathName, {
 			recursive: false,
 		})
@@ -353,4 +357,8 @@ export const Tpl = {
 
 		return InflatableReference.fromPath(pathName)
 	},
+}
+
+function normalizePath(pathName: string) {
+  return pathName.startsWith('file://') ? fileURLToPath(pathName) : pathName
 }
