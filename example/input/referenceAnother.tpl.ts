@@ -7,7 +7,8 @@ const config = configContext.consume()
 
 
 export default (await Tpl.from(
-  path.resolve(path.dirname(fileURLToPath(import.meta.url)),'./(ignoredFolder)')
+  import.meta,
+  './(ignoredFolder)'
 )).withContext(
   configContext.provide({
     ...config,

@@ -7,7 +7,7 @@ import {
 
 
 
-const input = await Tpl.from('./input')
+const input = await Tpl.from(import.meta, './input')
 
 const dir = defineDir<Record<Target, Inflatable>>({
 	development: input.withContext(

@@ -235,7 +235,7 @@ export class InflatableDir<
 				if (isIgnored) return null
 				return [
 					fileName.replace(tplFileExtensionRegex, ''),
-					await Tpl.from(path.join(pathName, fileName)),
+					await fromPath(path.join(pathName, fileName)),
 				] as const
 			}),
 		)
@@ -340,22 +340,28 @@ async function mapValuesAsync<T extends Record<string, any>, U>(
 	) as { [key in keyof T]: U }
 }
 
+async function fromPath(pathName: string) {
+  if (isTplFile(pathName)) {
+    return InflatableFile.fromPath(pathName)
+  }
+
+  const stat = await fs.promises.stat(pathName)
+  const isDir = stat.isDirectory()
+
+  if (isDir) {
+    return InflatableDir.fromPath(pathName)
+  }
+
+  return InflatableReference.fromPath(pathName)
+}
+
 export const Tpl = {
 	async from(
+    importMeta: { url: string },
 		pathName: string,
 	): Promise<InflatableFile | InflatableReference | InflatableDir> {
-		if (isTplFile(pathName)) {
-			return InflatableFile.fromPath(pathName)
-		}
-
-		const stat = await fs.promises.stat(pathName)
-		const isDir = stat.isDirectory()
-
-		if (isDir) {
-			return InflatableDir.fromPath(pathName)
-		}
-
-		return InflatableReference.fromPath(pathName)
+    pathName = path.join(path.dirname(normalizePath(importMeta.url)), pathName)
+		return fromPath(pathName)
 	},
 }
 
