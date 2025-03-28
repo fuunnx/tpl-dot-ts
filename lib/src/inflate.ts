@@ -306,18 +306,6 @@ async function writeFile(writeable: WriteableFile, outputFileName: string) {
 	return fs.promises.writeFile(outputFileName, writeable.content)
 }
 
-// export async function flattenContent(
-// 	dir: DirContent,
-// ): Promise<Record<string, unknown>> {
-// 	return mapValuesAsync(dir, async (value) => {
-// 		const x = await value.content()
-// 		if (x && typeof x === 'object' && '~kind' in x && x['~kind'] === 'dir') {
-// 			return await flattenContent(x)
-// 		}
-// 		return x
-// 	})
-// }
-
 function mapValues<T extends Record<string, any>, U>(
 	obj: T,
 	fn: (value: T[keyof T], key: keyof T) => U,
