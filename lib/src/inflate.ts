@@ -1,8 +1,6 @@
-import fs from 'node:fs'
 import path from 'node:path'
 
 import { register } from 'node:module'
-import { isTplFile } from './isTplFile.ts'
 import { InflatableDir } from './inflate/Dir.ts'
 import { InflatableReference } from './inflate/Reference.ts'
 import { normalizePath } from './lib/normalizePath.ts'
@@ -10,7 +8,6 @@ import { InflatableFile } from './inflate/File.ts'
 import { fromPath } from './inflate/fromPath.ts'
 
 register(import.meta.url + '/../register.js')
-
 
 export const Tpl = {
   async from(

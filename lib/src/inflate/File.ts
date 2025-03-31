@@ -37,7 +37,11 @@ export class InflatableFile implements IInflatableFile {
       )
 
       const { default: result } = await import(copyFileName)
-      return result
+      if (typeof result === 'function') {
+        return await result()
+      } else {
+        return result
+      }
     })
   }
 

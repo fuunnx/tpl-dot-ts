@@ -45,7 +45,6 @@ export async function toWritable<T extends Inflatable>(
 ): Promise<Inflate<T>> {
   if (inflatable[kindSym] === Taxonomy.KindEnum.file) {
     let content = await inflatable.content()
-    if (typeof content === 'function') content = content()
 
     if (isInflatable(content)) {
       return (await toWritable(content, outputFileName)) as Inflate<T>
