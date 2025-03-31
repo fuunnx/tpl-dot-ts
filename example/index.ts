@@ -1,8 +1,8 @@
 import { configContext, createConfig, type Target } from './config.ts'
 import {
-	Tpl,
-	defineDir,
-	type Inflatable,
+  Tpl,
+  defineDir,
+  type Inflatable,
 } from 'tpl.ts'
 
 
@@ -10,20 +10,20 @@ import {
 const input = await Tpl.from(import.meta, './input')
 
 const dir = defineDir<Record<Target, Inflatable>>({
-	development: input.withContext(
-		configContext.provide(createConfig('development')),
-	),
-	integ: input.withContext(configContext.provide(createConfig('integ'))),
-	preproduction: input.withContext(
-		configContext.provide(createConfig('preproduction')),
-	),
-	production: input.withContext(
-		configContext.provide(createConfig('production')),
-	),
+  development: input.withContext(
+    configContext.provide(createConfig('development')),
+  ),
+  integ: input.withContext(configContext.provide(createConfig('integ'))),
+  // preproduction: input.withContext(
+  // 	configContext.provide(createConfig('preproduction')),
+  // ),
+  // production: input.withContext(
+  // 	configContext.provide(createConfig('production')),
+  // ),
 })
 
 Promise.resolve().then(async () => {
-	console.time('execution time')
-	await dir.write('./output')
-	console.timeEnd('execution time')
+  console.time('execution time')
+  await dir.write('./output')
+  console.timeEnd('execution time')
 })
