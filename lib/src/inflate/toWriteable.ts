@@ -56,7 +56,7 @@ export async function toWritable<T extends Inflatable>(
     return {
       [familySym]: Taxonomy.FamilyEnum.writeable,
       [kindSym]: Taxonomy.KindEnum.file,
-      content: print(outputFileName, await inflatable.content()),
+      content: print(outputFileName, content),
     } satisfies WriteableFile as Inflate<T>
   }
 

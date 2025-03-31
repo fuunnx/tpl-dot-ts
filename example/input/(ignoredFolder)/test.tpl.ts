@@ -1,5 +1,8 @@
 import { configContext } from '../../config.ts'
 
-const config = configContext.consume()
 
-export default `Target is ${config.target}`
+export default function Default() {
+  const config = configContext.consume()
+
+  return `Target is ${config.target}`
+}

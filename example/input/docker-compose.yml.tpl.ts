@@ -5,165 +5,170 @@
 import { define, lib } from 'tpl.ts'
 import { args, configContext } from '../config.ts'
 
-const config = configContext.consume()
-const { docker, vars, prefix, target } = config
 
-const stack = define.docker({
-	prefix,
-	target,
-})
+export default function Docker() {
+  const config = configContext.consume()
+  const { docker, vars, prefix, target } = config
 
-export default stack.compose({
-	// version: '3.8',
+  const stack = define.docker({
+    prefix,
+    target,
+  })
 
-	networks: {
-		proxy: args.isLocal ? { driver: 'bridge' } : { external: true },
-	},
+  return stack.compose({
+    // version: '3.8',
 
-	volumes: {
-		'app-public': {},
-		...(args.isLocal
-			? {
-					'postgres-data': {},
-					'pgadmin-data': {},
-					'minio-data': {},
-					'typesense-data': {},
-					'acljs-data': {},
-					'beanstalkd-data': {},
-					'mail-data': {},
-					'app-data': {},
-					'history-data': {},
-					'image-proxy-data': {},
-					'percolate-data': {},
-				}
-			: {}),
-	},
+    networks: {
+      proxy: args.isLocal ? { driver: 'bridge' } : { external: true },
+    },
 
-	services: {
-		// ...autoImportServices('./services'),
-		// ...proxy,
-		// [`${config.prefix}-${args.target}-proxy`]: proxy,
+    volumes: {
+      'app-public': {},
+      ...(args.isLocal
+        ? {
+          'postgres-data': {},
+          'pgadmin-data': {},
+          'minio-data': {},
+          'typesense-data': {},
+          'acljs-data': {},
+          'beanstalkd-data': {},
+          'mail-data': {},
+          'app-data': {},
+          'history-data': {},
+          'image-proxy-data': {},
+          'percolate-data': {},
+        }
+        : {}),
+    },
 
-		...stack.service('db', {
-			image: `registry.projects.nartex.fr/nartex/system/citus-postgis:${docker.citus_version}`,
-			env_file: ['./environment/db.env'],
-			user: vars.user || undefined,
-			networks: ['default'],
-			healthcheck: {
-				test: ['CMD', 'pg_isready', '-U', 'postgres'],
-				interval: '10s',
-				timeout: '5s',
-				retries: 5,
-			},
-			volumes: [
-				lib.run(() => {
-					const storagePath = args.isLocal
-						? './config'
-						: '${STORAGE_DIRECTORY_PATH}/config'
+    services: {
+      // ...autoImportServices('./services'),
+      // ...proxy,
+      // [`${config.prefix}-${args.target}-proxy`]: proxy,
 
-					return `${storagePath}/citus/docker-entrypoint-initdb.d/multi-databases.sh:/docker-entrypoint-initdb.d/multi-databases.sh`
-				}),
+      ...stack.service('db', {
+        image: `registry.projects.nartex.fr/nartex/system/citus-postgis:${docker.citus_version}`,
+        env_file: ['./environment/db.env'],
+        user: vars.user || undefined,
+        networks: ['default'],
+        healthcheck: {
+          test: ['CMD', 'pg_isready', '-U', 'postgres'],
+          interval: '10s',
+          timeout: '5s',
+          retries: 5,
+        },
+        volumes: [
+          lib.run(() => {
+            const storagePath = args.isLocal
+              ? './config'
+              : '${STORAGE_DIRECTORY_PATH}/config'
 
-				...lib.run(() => {
-					if (!args.isPersistant) return []
+            return `${storagePath}/citus/docker-entrypoint-initdb.d/multi-databases.sh:/docker-entrypoint-initdb.d/multi-databases.sh`
+          }),
 
-					const storagePath = args.isLocal
-						? 'postgres-data'
-						: '${STORAGE_DIRECTORY_PATH}/data/postgres-data'
+          ...lib.run(() => {
+            if (!args.isPersistant) return []
 
-					return [`${storagePath}:/var/lib/postgresql/data`]
-				}),
-			],
-		}),
+            const storagePath = args.isLocal
+              ? 'postgres-data'
+              : '${STORAGE_DIRECTORY_PATH}/data/postgres-data'
 
-		...stack.service('typesense', {
-			image: `typesense/typesense:${docker.typesense_version}`,
-			env_file: ['./environment/typesense.env'],
-			networks: ['default', 'proxy'],
-			ports: args.isApiDev ? ['8108:8108'] : undefined,
-			depends_on: [],
-			volumes: args.isPersistant
-				? [
-						args.isLocal
-							? 'typesense-data:/data'
-							: '${STORAGE_DIRECTORY_PATH}/data/typesense-data:/data',
-					]
-				: undefined,
-		}),
+            return [`${storagePath}:/var/lib/postgresql/data`]
+          }),
+        ],
+      }),
 
-		...stack.service(
-			'minio',
-			args.isLocal && {
-				image: `minio/minio:${docker.minio_version}`,
-				command: 'server /data --console-address :9001 #http://minio/data',
-				env_file: ['./environment/minio.env'],
-				networks: ['default', 'proxy'],
-				depends_on: [],
-				healthcheck: {
-					test: [
-						'CMD-SHELL',
-						'[ "$$(curl \'http://localhost:9000\' -s -f -w %{http_code} -o /dev/null)" == "403" ] && echo OK || exit 1;',
-					],
-					interval: '5s',
-					timeout: '10s',
-					retries: 3,
-					start_period: '3s',
-				},
-				volumes: args.isPersistant ? ['minio-data:/data'] : undefined,
-				labels: {
-					...traefikLabels('minio', { subDomain: 'files', port: 9000 }),
-					...traefikLabels('minio_console', { subDomain: 'minio', port: 9000 }),
+      ...stack.service('typesense', {
+        image: `typesense/typesense:${docker.typesense_version}`,
+        env_file: ['./environment/typesense.env'],
+        networks: ['default', 'proxy'],
+        ports: args.isApiDev ? ['8108:8108'] : undefined,
+        depends_on: [],
+        volumes: args.isPersistant
+          ? [
+            args.isLocal
+              ? 'typesense-data:/data'
+              : '${STORAGE_DIRECTORY_PATH}/data/typesense-data:/data',
+          ]
+          : undefined,
+      }),
 
-					// traefik: {
-					//   http: {
-					//     routers: {
-					//       [`${config.prefix}_${args.target}_minio-http`]: {
-					//         entrypoints: 'web',
-					//         middlewares: 'https-redirect@file',
-					//         rule: `Host(\`${config.hostName}\`)`,
-					//         service: `${config.prefix}_${args.target}_minio`,
-					//       }
-					//     }
-					//   }
-					// }
-				},
-			},
-		),
+      ...stack.service(
+        'minio',
+        args.isLocal && {
+          image: `minio/minio:${docker.minio_version}`,
+          command: 'server /data --console-address :9001 #http://minio/data',
+          env_file: ['./environment/minio.env'],
+          networks: ['default', 'proxy'],
+          depends_on: [],
+          healthcheck: {
+            test: [
+              'CMD-SHELL',
+              '[ "$$(curl \'http://localhost:9000\' -s -f -w %{http_code} -o /dev/null)" == "403" ] && echo OK || exit 1;',
+            ],
+            interval: '5s',
+            timeout: '10s',
+            retries: 3,
+            start_period: '3s',
+          },
+          volumes: args.isPersistant ? ['minio-data:/data'] : undefined,
+          labels: {
+            ...traefikLabels('minio', { subDomain: 'files', port: 9000 }),
+            ...traefikLabels('minio_console', { subDomain: 'minio', port: 9000 }),
 
-		api: {
-			image: `realty/api:${docker.api_version}`,
+            // traefik: {
+            //   http: {
+            //     routers: {
+            //       [`${config.prefix}_${args.target}_minio-http`]: {
+            //         entrypoints: 'web',
+            //         middlewares: 'https-redirect@file',
+            //         rule: `Host(\`${config.hostName}\`)`,
+            //         service: `${config.prefix}_${args.target}_minio`,
+            //       }
+            //     }
+            //   }
+            // }
+          },
+        },
+      ),
 
-			env_file: ['.env'],
-		},
-	},
-})
+      api: {
+        image: `realty/api:${docker.api_version}`,
+
+        env_file: ['.env'],
+      },
+    },
+  })
+}
 
 type TraefikLabelsOptions = {
-	subDomain?: string
-	port: number
+  subDomain?: string
+  port: number
 }
 function traefikLabels(serviceName: string, options: TraefikLabelsOptions) {
-	const { subDomain, port } = options
-	const hostName = [subDomain, config.hostName].filter(Boolean).join('.')
+  const config = configContext.consume()
 
-	return {
-		'traefik.enable': true,
+  const { subDomain, port } = options
+  const hostName = [subDomain, config.hostName].filter(Boolean).join('.')
 
-		[`traefik.http.services.${config.prefix}_${args.target}_${serviceName}.loadbalancer.server.port`]:
-			port,
-		[`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.entrypoints`]:
-			'web',
-		[`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.middlewares`]:
-			'https-redirect@file',
-		[`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.rule`]: `Host(\`${hostName}\`)`,
-		[`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.service`]: `${config.prefix}_${args.target}_${serviceName}`,
+  return {
+    'traefik.enable': true,
 
-		[`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.tls`]: true,
-		[`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.entrypoints`]:
-			'websecure',
-		[`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.rule`]: `Host(\`${hostName}\`)`,
-		[`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.service`]: `${config.prefix}_${args.target}_${serviceName}`,
-	}
+    [`traefik.http.services.${config.prefix}_${args.target}_${serviceName}.loadbalancer.server.port`]:
+      port,
+    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.entrypoints`]:
+      'web',
+    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.middlewares`]:
+      'https-redirect@file',
+    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.rule`]: `Host(\`${hostName}\`)`,
+    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.service`]: `${config.prefix}_${args.target}_${serviceName}`,
+
+    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.tls`]: true,
+    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.entrypoints`]:
+      'websecure',
+    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.rule`]: `Host(\`${hostName}\`)`,
+    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.service`]: `${config.prefix}_${args.target}_${serviceName}`,
+  }
 }
 
 // 'traefik.enable': true,

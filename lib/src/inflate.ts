@@ -7,8 +7,6 @@ import { normalizePath } from './lib/normalizePath.ts'
 import { InflatableFile } from './inflate/File.ts'
 import { fromPath } from './inflate/fromPath.ts'
 
-register(import.meta.url + '/../register.js')
-
 export const Tpl = {
   async from(
     importMeta: { url: string },

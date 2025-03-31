@@ -29,20 +29,12 @@ export class InflatableFile implements IInflatableFile {
   }
 
   async content() {
-    const contextsSnapshoptId = getSnapshotId(this.#contexts)
-    return runWithContexts(this.#contexts, async () => {
-      const originalFileName = this.#pathName
-      const copyFileName = path.resolve(
-        `${originalFileName}?context=${contextsSnapshoptId}.js`,
-      )
-
-      const { default: result } = await import(copyFileName)
-      if (typeof result === 'function') {
-        return await result()
-      } else {
-        return result
-      }
-    })
+    const { default: result } = await import(this.#pathName)
+    if (typeof result === 'function') {
+      return runWithContexts(this.#contexts, result)
+    } else {
+      return result
+    }
   }
 
   async toWritable(outputFileName: string): Promise<WriteableFile> {
