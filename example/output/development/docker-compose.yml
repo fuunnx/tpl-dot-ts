@@ -2,18 +2,18 @@ networks:
   proxy:
     driver: bridge
 volumes:
-  app-public: {}
-  postgres-data: {}
-  pgadmin-data: {}
-  minio-data: {}
-  typesense-data: {}
-  acljs-data: {}
-  beanstalkd-data: {}
-  mail-data: {}
-  app-data: {}
-  history-data: {}
-  image-proxy-data: {}
-  percolate-data: {}
+  app-public:
+  postgres-data:
+  pgadmin-data:
+  minio-data:
+  typesense-data:
+  acljs-data:
+  beanstalkd-data:
+  mail-data:
+  app-data:
+  history-data:
+  image-proxy-data:
+  percolate-data:
 services:
   nartex-development-db:
     image: registry.projects.nartex.fr/nartex/system/citus-postgis:internal-todo
