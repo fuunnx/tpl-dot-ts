@@ -3,7 +3,7 @@ import { defineDir, defineFile } from 'tpl-dot-ts'
 
 
 export default function Tpl() {
-  const config = configContext.consume()
+  const config = configContext.use()
 
   return defineDir({
     './someFile.yaml': defineFile({

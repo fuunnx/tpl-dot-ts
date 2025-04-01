@@ -67,24 +67,24 @@ services:
       - minio-data:/data
     labels:
       traefik.enable: true
-      traefik.http.services.nartex_development_minio.loadbalancer.server.port: 9000
-      traefik.http.routers.nartex_development_minio-http.entrypoints: web
-      traefik.http.routers.nartex_development_minio-http.middlewares: https-redirect@file
-      traefik.http.routers.nartex_development_minio-http.rule: Host(`files.nartex.fr`)
-      traefik.http.routers.nartex_development_minio-http.service: nartex_development_minio
-      traefik.http.routers.nartex_development_minio.tls: true
-      traefik.http.routers.nartex_development_minio.entrypoints: websecure
-      traefik.http.routers.nartex_development_minio.rule: Host(`files.nartex.fr`)
-      traefik.http.routers.nartex_development_minio.service: nartex_development_minio
-      traefik.http.services.nartex_development_minio_console.loadbalancer.server.port: 9000
-      traefik.http.routers.nartex_development_minio_console-http.entrypoints: web
-      traefik.http.routers.nartex_development_minio_console-http.middlewares: https-redirect@file
-      traefik.http.routers.nartex_development_minio_console-http.rule: Host(`minio.nartex.fr`)
-      traefik.http.routers.nartex_development_minio_console-http.service: nartex_development_minio_console
-      traefik.http.routers.nartex_development_minio_console.tls: true
-      traefik.http.routers.nartex_development_minio_console.entrypoints: websecure
-      traefik.http.routers.nartex_development_minio_console.rule: Host(`minio.nartex.fr`)
-      traefik.http.routers.nartex_development_minio_console.service: nartex_development_minio_console
+      traefik.http.services.nartex-development_minio.loadbalancer.server.port: 9000
+      traefik.http.routers.nartex-development_minio-http.entrypoints: web
+      traefik.http.routers.nartex-development_minio-http.middlewares: https-redirect@file
+      traefik.http.routers.nartex-development_minio-http.rule: Host(`files.nartex.fr`)
+      traefik.http.routers.nartex-development_minio-http.service: nartex-development_minio
+      traefik.http.routers.nartex-development_minio.tls: true
+      traefik.http.routers.nartex-development_minio.entrypoints: websecure
+      traefik.http.routers.nartex-development_minio.rule: Host(`files.nartex.fr`)
+      traefik.http.routers.nartex-development_minio.service: nartex-development_minio
+      traefik.http.services.nartex-development_minio_console.loadbalancer.server.port: 9000
+      traefik.http.routers.nartex-development_minio_console-http.entrypoints: web
+      traefik.http.routers.nartex-development_minio_console-http.middlewares: https-redirect@file
+      traefik.http.routers.nartex-development_minio_console-http.rule: Host(`minio.nartex.fr`)
+      traefik.http.routers.nartex-development_minio_console-http.service: nartex-development_minio_console
+      traefik.http.routers.nartex-development_minio_console.tls: true
+      traefik.http.routers.nartex-development_minio_console.entrypoints: websecure
+      traefik.http.routers.nartex-development_minio_console.rule: Host(`minio.nartex.fr`)
+      traefik.http.routers.nartex-development_minio_console.service: nartex-development_minio_console
   api:
     image: realty/api:release/3-4-debug
     env_file:

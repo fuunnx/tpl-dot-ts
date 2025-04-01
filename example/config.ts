@@ -1,77 +1,85 @@
-import { createContext, memoize, overloadConfig, parseArgs } from 'tpl-dot-ts';
+import { createContext } from 'tpl-dot-ts';
+import { parseArgs } from 'node:util';
 
-export const args = parseArgs({
-  input: './input',
-  output: './output',
-  target: ['development', 'integ', 'preproduction', 'production'] as const,
-  isLocal: true,
-  isPersistant: true,
-  isApiDev: true,
+const parsedArgs = parseArgs({
+  options: {
+    isLocal: {
+      type: 'boolean',
+      default: true,
+    },
+    isPersistant: {
+      type: 'boolean',
+      default: true,
+    },
+    isApiDev: {
+      type: 'boolean',
+      default: true,
+    },
+  },
+  strict: true,
 })
+
+export const args = parsedArgs.values
 
 export type Target = 'development' | 'integ' | 'preproduction' | 'production'
 
-function createSelect<T extends string>(target: T) {
-  return function select<U>(conf: Partial<Record<T, U>> & { default: U }): U {
-    return conf[target] ?? conf.default
-  }
+function select<T extends string, U>(target: T, conf: Partial<Record<T, U>> & { default: U }): U {
+  return conf[target] ?? conf.default
 }
 
-export const createConfig = memoize((target: Target) => {
-  const selectWithTarget = createSelect(args.target)
-
+export function createConfig(target: Target) {
   return {
     target,
-    prefix: 'nartex',
+    prefix: `nartex-${target}`,
     host: 'nartex.fr',
     hostName: 'nartex.fr',
 
     docker: {
-      front_version: selectWithTarget({
+      front_version: select(target, {
         default: 'release/3-4',
         production: 'v3-4-0',
         preproduction: 'v3-4-0',
-      }),
-      api_version: selectWithTarget({
+      } as const),
+      api_version: select(target, {
         default: 'release/3-4-debug',
         production: 'v3-4-0-release',
         preproduction: 'v3-4-0-release',
-      }),
-      typesense_version: selectWithTarget({
+      } as const),
+      typesense_version: select(target, {
         default: '1-2-3',
-      }),
-      citus_version: selectWithTarget({
+      } as const),
+      citus_version: select(target, {
         default: 'internal-todo',
         production: 'todo',
         preproduction: 'todo',
-      }),
-      minio_version: selectWithTarget({
+      } as const),
+      minio_version: select(target, {
         default: 'RELEASE.2022-08-26T19-53-15Z.fips',
-      }),
+      } as const),
     },
 
-    vars: overloadConfig(target, {
-      host: {
+    vars: {
+      host: select(target, {
         default: 'realty.test',
         development: 'realty.test',
         integ: 'realty.integ.nartest.fr',
         preproduction: 'preprod.realty.fr',
         production: 'realty.fr',
-      },
+      } as const),
 
-      typesense_api_key: {
+      typesense_api_key: select(target, {
         default: '',
         preproduction: 'typesense_api_key',
         production: 'typesense_api_key_prod',
-      },
+      } as const),
 
-      user: {
+      user: select(target, {
         default: '',
         integ: '1002:1002',
-      },
-    }),
+      } as const),
+    },
   }
-})
+}
 
 export const configContext =
   createContext<ReturnType<typeof createConfig>>('config')

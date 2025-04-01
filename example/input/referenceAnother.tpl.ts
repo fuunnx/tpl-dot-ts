@@ -4,7 +4,7 @@ import { Tpl } from "tpl-dot-ts";
 
 
 export default async function Default() {
-  const config = configContext.consume()
+  const config = configContext.use()
 
   return (await Tpl.from(
     import.meta,

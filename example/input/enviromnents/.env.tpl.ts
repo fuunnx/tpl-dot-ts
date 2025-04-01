@@ -3,10 +3,10 @@ import { args, configContext } from '../../config.ts'
 
 
 export default function Env() {
-  const config = configContext.consume()
+  const config = configContext.use()
 
   return define.dotenv({
-    COMPOSE_PROJECT_NAME: `${config.prefix}-${args.target}`,
+    COMPOSE_PROJECT_NAME: config.prefix,
     COMPOSE_FILE: args.isLocal
       ? 'docker/docker-compose.yml'
       : 'docker-compose.yml',
@@ -14,7 +14,7 @@ export default function Env() {
 
     '# this is a way to write comments !': '',
     STORAGE_DIRECTORY_PATH: args.isLocal
-      ? `/stacks/storage/${config.prefix}-${args.target}`
+      ? `/stacks/storage/${config.prefix}`
       : undefined,
   })
 } 

@@ -6,7 +6,7 @@
 		"./example",
 		"./lib"
 	],
-	"packageManager": "yarn@4.7.0",
+	"packageManager": "yarn@4.8.1",
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4"
 	}

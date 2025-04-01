@@ -23,7 +23,6 @@
 		"lib": ["es2022"],
 		"baseUrl": "./lib",
 		"paths": {
-			"#runtime": ["../index.ts"],
 			"tpl-dot-ts": ["../lib/src/index.ts"]
 		}
 	}

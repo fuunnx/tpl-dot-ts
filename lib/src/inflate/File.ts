@@ -1,6 +1,5 @@
 import fs from 'node:fs';
-import path from 'node:path';
-import { type ProvidedContext, getSnapshotId, runWithContexts } from '../context.ts';
+import { type ProvidedContext, runWithContexts } from '../context.ts';
 import { familySym, kindSym, Taxonomy, type IInflatableFile, type WriteableFile } from '../types.ts';
 import { normalizePath } from '../lib/normalizePath.ts';
 import { writeFile } from './write.ts';

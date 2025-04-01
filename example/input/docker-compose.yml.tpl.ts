@@ -7,7 +7,7 @@ import { args, configContext } from '../config.ts'
 
 
 export default function Docker() {
-  const config = configContext.consume()
+  const config = configContext.use()
   const { docker, vars, prefix, target } = config
 
   const stack = define.docker({
@@ -42,7 +42,7 @@ export default function Docker() {
     services: {
       // ...autoImportServices('./services'),
       // ...proxy,
-      // [`${config.prefix}-${args.target}-proxy`]: proxy,
+      // [`${config.prefix}-proxy`]: proxy,
 
       ...stack.service('db', {
         image: `registry.projects.nartex.fr/nartex/system/citus-postgis:${docker.citus_version}`,
@@ -117,11 +117,11 @@ export default function Docker() {
             // traefik: {
             //   http: {
             //     routers: {
-            //       [`${config.prefix}_${args.target}_minio-http`]: {
+            //       [`${config.prefix}_minio-http`]: {
             //         entrypoints: 'web',
             //         middlewares: 'https-redirect@file',
             //         rule: `Host(\`${config.hostName}\`)`,
-            //         service: `${config.prefix}_${args.target}_minio`,
+            //         service: `${config.prefix}_minio`,
             //       }
             //     }
             //   }
@@ -144,7 +144,7 @@ type TraefikLabelsOptions = {
   port: number
 }
 function traefikLabels(serviceName: string, options: TraefikLabelsOptions) {
-  const config = configContext.consume()
+  const config = configContext.use()
 
   const { subDomain, port } = options
   const hostName = [subDomain, config.hostName].filter(Boolean).join('.')
@@ -152,43 +152,43 @@ function traefikLabels(serviceName: string, options: TraefikLabelsOptions) {
   return {
     'traefik.enable': true,
 
-    [`traefik.http.services.${config.prefix}_${args.target}_${serviceName}.loadbalancer.server.port`]:
+    [`traefik.http.services.${config.prefix}_${serviceName}.loadbalancer.server.port`]:
       port,
-    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.entrypoints`]:
+    [`traefik.http.routers.${config.prefix}_${serviceName}-http.entrypoints`]:
       'web',
-    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.middlewares`]:
+    [`traefik.http.routers.${config.prefix}_${serviceName}-http.middlewares`]:
       'https-redirect@file',
-    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.rule`]: `Host(\`${hostName}\`)`,
-    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}-http.service`]: `${config.prefix}_${args.target}_${serviceName}`,
+    [`traefik.http.routers.${config.prefix}_${serviceName}-http.rule`]: `Host(\`${hostName}\`)`,
+    [`traefik.http.routers.${config.prefix}_${serviceName}-http.service`]: `${config.prefix}_${serviceName}`,
 
-    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.tls`]: true,
-    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.entrypoints`]:
+    [`traefik.http.routers.${config.prefix}_${serviceName}.tls`]: true,
+    [`traefik.http.routers.${config.prefix}_${serviceName}.entrypoints`]:
       'websecure',
-    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.rule`]: `Host(\`${hostName}\`)`,
-    [`traefik.http.routers.${config.prefix}_${args.target}_${serviceName}.service`]: `${config.prefix}_${args.target}_${serviceName}`,
+    [`traefik.http.routers.${config.prefix}_${serviceName}.rule`]: `Host(\`${hostName}\`)`,
+    [`traefik.http.routers.${config.prefix}_${serviceName}.service`]: `${config.prefix}_${serviceName}`,
   }
 }
 
 // 'traefik.enable': true,
 
-// [`traefik.http.services.${config.prefix}_${args.target}_minio.loadbalancer.server.port`]: 9000,
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio-http.entrypoints`]: 'web',
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio-http.middlewares`]: 'https-redirect@file',
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio-http.rule`]: 'Host(`files.${REALTY_HOSTNAME}`)',
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio-http.service`]: `${config.prefix}_${args.target}_minio`,
+// [`traefik.http.services.${config.prefix}_minio.loadbalancer.server.port`]: 9000,
+// [`traefik.http.routers.${config.prefix}_minio-http.entrypoints`]: 'web',
+// [`traefik.http.routers.${config.prefix}_minio-http.middlewares`]: 'https-redirect@file',
+// [`traefik.http.routers.${config.prefix}_minio-http.rule`]: 'Host(`files.${REALTY_HOSTNAME}`)',
+// [`traefik.http.routers.${config.prefix}_minio-http.service`]: `${config.prefix}_minio`,
 
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio.tls`]: true,
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio.entrypoints`]: 'websecure',
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio.rule`]: 'Host(`files.${REALTY_HOSTNAME}`)',
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio.service`]: `${config.prefix}_${args.target}_minio`,
+// [`traefik.http.routers.${config.prefix}_minio.tls`]: true,
+// [`traefik.http.routers.${config.prefix}_minio.entrypoints`]: 'websecure',
+// [`traefik.http.routers.${config.prefix}_minio.rule`]: 'Host(`files.${REALTY_HOSTNAME}`)',
+// [`traefik.http.routers.${config.prefix}_minio.service`]: `${config.prefix}_minio`,
 
-// [`traefik.http.services.${config.prefix}_${args.target}_minio_console.loadbalancer.server.port`]: 9001,
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio_console-http.entrypoints`]: 'web',
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio_console-http.middlewares`]: 'https-redirect@file',
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio_console-http.rule`]: 'Host(`minio.${REALTY_HOSTNAME}`)',
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio_console-http.service`]: `${config.prefix}_${args.target}_minio_console`,
+// [`traefik.http.services.${config.prefix}_minio_console.loadbalancer.server.port`]: 9001,
+// [`traefik.http.routers.${config.prefix}_minio_console-http.entrypoints`]: 'web',
+// [`traefik.http.routers.${config.prefix}_minio_console-http.middlewares`]: 'https-redirect@file',
+// [`traefik.http.routers.${config.prefix}_minio_console-http.rule`]: 'Host(`minio.${REALTY_HOSTNAME}`)',
+// [`traefik.http.routers.${config.prefix}_minio_console-http.service`]: `${config.prefix}_minio_console`,
 
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio_console.tls`]: true,
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio_console.entrypoints`]: 'websecure',
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio_console.rule`]: 'Host(`minio.${REALTY_HOSTNAME}`)',
-// [`traefik.http.routers.${config.prefix}_${args.target}_minio_console.service`]: `${config.prefix}_${args.target}_minio_console`,
+// [`traefik.http.routers.${config.prefix}_minio_console.tls`]: true,
+// [`traefik.http.routers.${config.prefix}_minio_console.entrypoints`]: 'websecure',
+// [`traefik.http.routers.${config.prefix}_minio_console.rule`]: 'Host(`minio.${REALTY_HOSTNAME}`)',
+// [`traefik.http.routers.${config.prefix}_minio_console.service`]: `${config.prefix}_minio_console`,
