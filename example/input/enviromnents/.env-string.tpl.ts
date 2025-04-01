@@ -7,10 +7,10 @@ export default function Env() {
   return `
 COMPOSE_PROJECT_NAME=${config.prefix}
 
-COMPOSE_FILE=${args.isLocal ? 'docker/docker-compose.yml' : 'docker-compose.yml'}
+COMPOSE_FILE=${config.target === 'development' ? 'docker/docker-compose.yml' : 'docker-compose.yml'}
 
 REALTY_HOSTNAME=${config.host}
 
-${!args.isLocal ? `/stacks/storage/${config.prefix}` : ''}
+${config.target === 'development' ? '' : `/stacks/storage/${config.prefix}`}
   `.trim()
 }

@@ -42,6 +42,8 @@ services:
       - proxy
     ports:
       - 8108:8108
+    "# commentaire":
+      qqchose: autre
     depends_on: []
     volumes:
       - typesense-data:/data

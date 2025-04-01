@@ -27,6 +27,7 @@ export function yamlPrinter(): Printer {
       if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) {
         if (typeof data === 'string') return data
         if (typeof data === 'object') return yaml.stringify(data)
+          // replace all `key: {}` with `key:`
           .replaceAll(/(.*:) \{\}/gi, '$1')
       }
 

@@ -17,12 +17,12 @@ export default function Docker() {
 
   return stack.compose({
     networks: {
-      proxy: args.isLocal ? { driver: 'bridge' } : { external: true },
+      proxy: config.target === 'development' ? { driver: 'bridge' } : { external: true },
     },
 
     volumes: {
       'app-public': {},
-      ...(args.isLocal
+      ...(config.target === 'development'
         ? {
           'postgres-data': {},
           'pgadmin-data': {},
@@ -57,7 +57,7 @@ export default function Docker() {
         },
         volumes: [
           lib.run(() => {
-            const storagePath = args.isLocal
+            const storagePath = config.target === 'development'
               ? './config'
               : '${STORAGE_DIRECTORY_PATH}/config'
 
@@ -67,7 +67,7 @@ export default function Docker() {
           ...lib.run(() => {
             if (!args.isPersistant) return []
 
-            const storagePath = args.isLocal
+            const storagePath = config.target === 'development'
               ? 'postgres-data'
               : '${STORAGE_DIRECTORY_PATH}/data/postgres-data'
 
@@ -81,10 +81,11 @@ export default function Docker() {
         env_file: ['./environment/typesense.env'],
         networks: ['default', 'proxy'],
         ports: args.isApiDev ? ['8108:8108'] : undefined,
+        '# commentaire': { "qqchose": "autre" },
         depends_on: [],
         volumes: args.isPersistant
           ? [
-            args.isLocal
+            config.target === 'development'
               ? 'typesense-data:/data'
               : '${STORAGE_DIRECTORY_PATH}/data/typesense-data:/data',
           ]
@@ -93,7 +94,7 @@ export default function Docker() {
 
       ...stack.service(
         'minio',
-        args.isLocal && {
+        config.target === 'development' && {
           image: `minio/minio:${docker.minio_version}`,
           command: 'server /data --console-address :9001 #http://minio/data',
           env_file: ['./environment/minio.env'],

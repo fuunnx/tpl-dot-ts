@@ -3,10 +3,6 @@ import { parseArgs } from 'node:util';
 
 const parsedArgs = parseArgs({
   options: {
-    isLocal: {
-      type: 'boolean',
-      default: true,
-    },
     isPersistant: {
       type: 'boolean',
       default: true,

@@ -1,19 +1,8 @@
 networks:
   proxy:
-    driver: bridge
+    external: true
 volumes:
   app-public:
-  postgres-data:
-  pgadmin-data:
-  minio-data:
-  typesense-data:
-  acljs-data:
-  beanstalkd-data:
-  mail-data:
-  app-data:
-  history-data:
-  image-proxy-data:
-  percolate-data:
 services:
   nartex-integ-db:
     image: registry.projects.nartex.fr/nartex/system/citus-postgis:internal-todo
@@ -32,8 +21,8 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ./config/citus/docker-entrypoint-initdb.d/multi-databases.sh:/docker-entrypoint-initdb.d/multi-databases.sh
-      - postgres-data:/var/lib/postgresql/data
+      - ${STORAGE_DIRECTORY_PATH}/config/citus/docker-entrypoint-initdb.d/multi-databases.sh:/docker-entrypoint-initdb.d/multi-databases.sh
+      - ${STORAGE_DIRECTORY_PATH}/data/postgres-data:/var/lib/postgresql/data
   nartex-integ-typesense:
     image: typesense/typesense:1-2-3
     env_file:
@@ -43,49 +32,11 @@ services:
       - proxy
     ports:
       - 8108:8108
+    "# commentaire":
+      qqchose: autre
     depends_on: []
     volumes:
-      - typesense-data:/data
-  nartex-integ-minio:
-    image: minio/minio:RELEASE.2022-08-26T19-53-15Z.fips
-    command: "server /data --console-address :9001 #http://minio/data"
-    env_file:
-      - ./environment/minio.env
-    networks:
-      - default
-      - proxy
-    depends_on: []
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - "[ \"$$(curl 'http://localhost:9000' -s -f -w %{http_code} -o
-          /dev/null)\" == \"403\" ] && echo OK || exit 1;"
-      interval: 5s
-      timeout: 10s
-      retries: 3
-      start_period: 3s
-    volumes:
-      - minio-data:/data
-    labels:
-      traefik.enable: true
-      traefik.http.services.nartex-integ_minio.loadbalancer.server.port: 9000
-      traefik.http.routers.nartex-integ_minio-http.entrypoints: web
-      traefik.http.routers.nartex-integ_minio-http.middlewares: https-redirect@file
-      traefik.http.routers.nartex-integ_minio-http.rule: Host(`files.nartex.fr`)
-      traefik.http.routers.nartex-integ_minio-http.service: nartex-integ_minio
-      traefik.http.routers.nartex-integ_minio.tls: true
-      traefik.http.routers.nartex-integ_minio.entrypoints: websecure
-      traefik.http.routers.nartex-integ_minio.rule: Host(`files.nartex.fr`)
-      traefik.http.routers.nartex-integ_minio.service: nartex-integ_minio
-      traefik.http.services.nartex-integ_minio_console.loadbalancer.server.port: 9000
-      traefik.http.routers.nartex-integ_minio_console-http.entrypoints: web
-      traefik.http.routers.nartex-integ_minio_console-http.middlewares: https-redirect@file
-      traefik.http.routers.nartex-integ_minio_console-http.rule: Host(`minio.nartex.fr`)
-      traefik.http.routers.nartex-integ_minio_console-http.service: nartex-integ_minio_console
-      traefik.http.routers.nartex-integ_minio_console.tls: true
-      traefik.http.routers.nartex-integ_minio_console.entrypoints: websecure
-      traefik.http.routers.nartex-integ_minio_console.rule: Host(`minio.nartex.fr`)
-      traefik.http.routers.nartex-integ_minio_console.service: nartex-integ_minio_console
+      - ${STORAGE_DIRECTORY_PATH}/data/typesense-data:/data
   api:
     image: realty/api:release/3-4-debug
     env_file:

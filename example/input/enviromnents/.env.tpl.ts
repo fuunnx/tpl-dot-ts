@@ -7,13 +7,13 @@ export default function Env() {
 
   return define.dotenv({
     COMPOSE_PROJECT_NAME: config.prefix,
-    COMPOSE_FILE: args.isLocal
+    COMPOSE_FILE: config.target === 'development'
       ? 'docker/docker-compose.yml'
       : 'docker-compose.yml',
     REALTY_HOSTNAME: config.host,
 
     '# this is a way to write comments !': '',
-    STORAGE_DIRECTORY_PATH: args.isLocal
+    STORAGE_DIRECTORY_PATH: config.target === 'development'
       ? `/stacks/storage/${config.prefix}`
       : undefined,
   })
