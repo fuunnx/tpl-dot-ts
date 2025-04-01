@@ -24,7 +24,7 @@
 		"baseUrl": "./lib",
 		"paths": {
 			"#runtime": ["../index.ts"],
-			"tpl.ts": ["../lib/src/index.ts"]
+			"tpl-dot-ts": ["../lib/src/index.ts"]
 		}
 	}
 }

@@ -2,7 +2,7 @@
 // import {args} from '../.runtime/registerArgs.js';
 // import { config } from '#runtime';
 
-import { define, lib } from 'tpl.ts'
+import { define, lib } from 'tpl-dot-ts'
 import { args, configContext } from '../config.ts'
 
 
@@ -16,8 +16,6 @@ export default function Docker() {
   })
 
   return stack.compose({
-    // version: '3.8',
-
     networks: {
       proxy: args.isLocal ? { driver: 'bridge' } : { external: true },
     },

@@ -1,6 +1,5 @@
 {
-	"name": "tpl.ts",
-	"_name": "TODO rename to tpl-ts to fix imports mapping",
+	"name": "tpl-dot-ts",
 	"type": "module",
 	"license": "MIT",
 	"exports": {

@@ -1,5 +1,5 @@
 {
-	"name": "tpl.ts-workspace-root",
+	"name": "tpl-dot-ts-workspace-root",
 	"type": "module",
 	"private": true,
 	"workspaces": [

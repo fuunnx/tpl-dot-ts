@@ -1,4 +1,4 @@
-import { define } from 'tpl.ts'
+import { define } from 'tpl-dot-ts'
 import { args, configContext } from '../../config.ts'
 
 

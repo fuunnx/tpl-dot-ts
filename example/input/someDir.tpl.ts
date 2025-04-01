@@ -1,5 +1,5 @@
 import { configContext } from '../config.ts'
-import { defineDir, defineFile } from 'tpl.ts'
+import { defineDir, defineFile } from 'tpl-dot-ts'
 
 
 export default function Tpl() {

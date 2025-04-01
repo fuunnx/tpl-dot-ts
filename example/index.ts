@@ -3,7 +3,7 @@ import {
   Tpl,
   defineDir,
   type Inflatable,
-} from 'tpl.ts'
+} from 'tpl-dot-ts'
 
 
 

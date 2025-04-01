@@ -1,5 +1,5 @@
 import { configContext } from "../config.ts";
-import { Tpl } from "tpl.ts";
+import { Tpl } from "tpl-dot-ts";
 
 
 

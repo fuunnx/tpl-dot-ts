@@ -20,7 +20,7 @@ export async function writeWriteable(writeable: Writeable, outputName: string) {
 
 
 export async function writeDir(dir: WriteableDir, outputDir: string) {
-  const tmpOutput = `${tmpdir()}/tpl.ts-${randomUUID()}`
+  const tmpOutput = `${tmpdir()}/tpl-dot-ts-${randomUUID()}`
   await fs.promises.mkdir(tmpOutput, { recursive: true })
 
   const files = dir.content
