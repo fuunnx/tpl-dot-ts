@@ -9,7 +9,7 @@ import {
 
 const input = await Tpl.from(import.meta, './input')
 
-const dir = defineDir<Record<Target, Inflatable>>({
+const dir = defineDir<Partial<Record<Target, Inflatable>>>({
   development: input.withContext(
     configContext.provide(createConfig('development')),
   ),
@@ -24,6 +24,6 @@ const dir = defineDir<Record<Target, Inflatable>>({
 
 Promise.resolve().then(async () => {
   console.time('execution time')
-  await dir.write('./output')
+  await dir.write('./output.gen')
   console.timeEnd('execution time')
 })
