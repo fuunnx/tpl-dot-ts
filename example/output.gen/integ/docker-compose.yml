@@ -4,7 +4,8 @@ networks:
 volumes:
   app-public:
 services:
-  nartex-integ-db:
+  db:
+    hostname: nartex-integ-db
     image: registry.projects.nartex.fr/nartex/system/citus-postgis:internal-todo
     env_file:
       - ./environment/db.env
@@ -23,7 +24,8 @@ services:
     volumes:
       - ${STORAGE_DIRECTORY_PATH}/config/citus/docker-entrypoint-initdb.d/multi-databases.sh:/docker-entrypoint-initdb.d/multi-databases.sh
       - ${STORAGE_DIRECTORY_PATH}/data/postgres-data:/var/lib/postgresql/data
-  nartex-integ-typesense:
+  typesense:
+    hostname: nartex-integ-typesense
     image: typesense/typesense:1-2-3
     env_file:
       - ./environment/typesense.env
@@ -32,12 +34,12 @@ services:
       - proxy
     ports:
       - 8108:8108
-    "# commentaire":
-      qqchose: autre
     depends_on: []
     volumes:
       - ${STORAGE_DIRECTORY_PATH}/data/typesense-data:/data
+  minio:
   api:
+    hostname: nartex-integ-api
     image: realty/api:release/3-4-debug
     env_file:
       - .env

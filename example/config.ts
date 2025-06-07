@@ -1,5 +1,6 @@
 import { createContext } from 'tpl-dot-ts'
 import { parseArgs } from 'node:util'
+import { select } from 'utils/select.ts'
 
 const parsedArgs = parseArgs({
 	options: {
@@ -18,13 +19,6 @@ const parsedArgs = parseArgs({
 export const args = parsedArgs.values
 
 export type Target = 'development' | 'integ' | 'preproduction' | 'production'
-
-function select<T extends string, U>(
-	target: T,
-	conf: Partial<Record<T, U>> & { default: U },
-): U {
-	return conf[target] ?? conf.default
-}
 
 function createConfig(target: Target) {
 	return {
@@ -77,7 +71,7 @@ function createConfig(target: Target) {
 				integ: '1002:1002',
 			} as const),
 		},
-	}
+	} as const
 }
 
 export class Config extends createContext('config', () =>

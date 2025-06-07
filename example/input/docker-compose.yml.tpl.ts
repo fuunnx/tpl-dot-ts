@@ -1,101 +1,103 @@
-import { define } from 'tpl-dot-ts'
+import {
+	defineDockerCompose,
+	defineDockerComposeService,
+} from 'utils/docker.ts'
 import { args, Config } from '../config.ts'
-import { run } from 'utils/run.ts'
+import flattenObject from '@stdlib/utils-flatten-object'
 
 export default function Docker() {
 	const config = Config.getContextValue()
-	const { docker, vars, prefix, target } = config
+	const { docker, vars, target } = config
 
-	const stack = define.docker({
-		prefix,
-		target,
-	})
-
-	return stack.compose({
+	return defineDockerCompose({
 		networks: {
-			proxy:
-				config.target === 'development'
-					? { driver: 'bridge' }
-					: { external: true },
+			get proxy() {
+				if (target === 'development') {
+					return { driver: 'bridge' }
+				} else {
+					return { external: true }
+				}
+			},
 		},
 
-		volumes: {
-			'app-public': {},
-			...(config.target === 'development'
-				? {
-						'postgres-data': {},
-						'pgadmin-data': {},
-						'minio-data': {},
-						'typesense-data': {},
-						'acljs-data': {},
-						'beanstalkd-data': {},
-						'mail-data': {},
-						'app-data': {},
-						'history-data': {},
-						'image-proxy-data': {},
-						'percolate-data': {},
-					}
-				: {}),
+		get volumes() {
+			if (target === 'development') {
+				return {
+					'app-public': {},
+					'postgres-data': {},
+					'pgadmin-data': {},
+					'minio-data': {},
+					'typesense-data': {},
+					'acljs-data': {},
+					'beanstalkd-data': {},
+					'mail-data': {},
+					'app-data': {},
+					'history-data': {},
+					'image-proxy-data': {},
+					'percolate-data': {},
+				}
+			} else {
+				return {
+					'app-public': {},
+				}
+			}
 		},
 
 		services: {
 			// ...autoImportServices('./services'),
 			// ...proxy,
-			// [`${config.prefix}-proxy`]: proxy,
+			// [`${prefix}-proxy`]: proxy,
 
-			...stack.service('db', {
-				image: `registry.projects.nartex.fr/nartex/system/citus-postgis:${docker.citus_version}`,
-				env_file: ['./environment/db.env'],
-				user: vars.user || undefined,
-				networks: ['default'],
-				healthcheck: {
-					test: ['CMD', 'pg_isready', '-U', 'postgres'],
-					interval: '10s',
-					timeout: '5s',
-					retries: 5,
-				},
-				volumes: [
-					run(() => {
-						const storagePath =
-							config.target === 'development'
-								? './config'
-								: '${STORAGE_DIRECTORY_PATH}/config'
+			get db() {
+				return defineDockerComposeService('db', {
+					image: `registry.projects.nartex.fr/nartex/system/citus-postgis:${docker.citus_version}`,
+					env_file: ['./environment/db.env'],
+					user: vars.user || undefined,
+					networks: ['default'],
+					healthcheck: {
+						test: ['CMD', 'pg_isready', '-U', 'postgres'],
+						interval: '10s',
+						timeout: '5s',
+						retries: 5,
+					},
+					get volumes() {
+						if (target === 'development') {
+							return [
+								'./config/citus/docker-entrypoint-initdb.d/multi-databases.sh:/docker-entrypoint-initdb.d/multi-databases.sh',
+								'postgres-data:/var/lib/postgresql/data',
+							]
+						} else {
+							return [
+								'${STORAGE_DIRECTORY_PATH}/config/citus/docker-entrypoint-initdb.d/multi-databases.sh:/docker-entrypoint-initdb.d/multi-databases.sh',
+								'${STORAGE_DIRECTORY_PATH}/data/postgres-data:/var/lib/postgresql/data',
+							]
+						}
+					},
+				})
+			},
 
-						return `${storagePath}/citus/docker-entrypoint-initdb.d/multi-databases.sh:/docker-entrypoint-initdb.d/multi-databases.sh`
-					}),
+			get typesense() {
+				return defineDockerComposeService('typesense', {
+					image: `typesense/typesense:${docker.typesense_version}`,
+					env_file: ['./environment/typesense.env'],
+					networks: ['default', 'proxy'],
+					ports: args.isApiDev ? ['8108:8108'] : undefined,
+					// '# commentaire': { qqchose: 'autre' },
+					depends_on: [],
+					volumes: args.isPersistant
+						? [
+								target === 'development'
+									? 'typesense-data:/data'
+									: '${STORAGE_DIRECTORY_PATH}/data/typesense-data:/data',
+							]
+						: undefined,
+				})
+			},
 
-					...run(() => {
-						if (!args.isPersistant) return []
+			get minio() {
+				if (target !== 'development') return {}
 
-						const storagePath =
-							config.target === 'development'
-								? 'postgres-data'
-								: '${STORAGE_DIRECTORY_PATH}/data/postgres-data'
-
-						return [`${storagePath}:/var/lib/postgresql/data`]
-					}),
-				],
-			}),
-
-			...stack.service('typesense', {
-				image: `typesense/typesense:${docker.typesense_version}`,
-				env_file: ['./environment/typesense.env'],
-				networks: ['default', 'proxy'],
-				ports: args.isApiDev ? ['8108:8108'] : undefined,
-				'# commentaire': { qqchose: 'autre' },
-				depends_on: [],
-				volumes: args.isPersistant
-					? [
-							config.target === 'development'
-								? 'typesense-data:/data'
-								: '${STORAGE_DIRECTORY_PATH}/data/typesense-data:/data',
-						]
-					: undefined,
-			}),
-
-			...stack.service(
-				'minio',
-				config.target === 'development' && {
+				return defineDockerComposeService('minio', {
 					image: `minio/minio:${docker.minio_version}`,
 					command: 'server /data --console-address :9001 #http://minio/data',
 					env_file: ['./environment/minio.env'],
@@ -132,13 +134,15 @@ export default function Docker() {
 						//   }
 						// }
 					},
-				},
-			),
+				})
+			},
 
-			api: {
-				image: `realty/api:${docker.api_version}`,
+			get api() {
+				return defineDockerComposeService('api', {
+					image: `realty/api:${docker.api_version}`,
 
-				env_file: ['.env'],
+					env_file: ['.env'],
+				})
 			},
 		},
 	})
@@ -149,29 +153,36 @@ type TraefikLabelsOptions = {
 	port: number
 }
 function traefikLabels(serviceName: string, options: TraefikLabelsOptions) {
-	const config = Config.getContextValue()
+	const { hostName, prefix } = Config.getContextValue()
 
 	const { subDomain, port } = options
-	const hostName = [subDomain, config.hostName].filter(Boolean).join('.')
+	const fullHostName = [subDomain, hostName].filter(Boolean).join('.')
+	const fullServiceName = `${prefix}_${serviceName}`
 
-	return {
-		'traefik.enable': true,
-
-		[`traefik.http.services.${config.prefix}_${serviceName}.loadbalancer.server.port`]:
-			port,
-		[`traefik.http.routers.${config.prefix}_${serviceName}-http.entrypoints`]:
-			'web',
-		[`traefik.http.routers.${config.prefix}_${serviceName}-http.middlewares`]:
-			'https-redirect@file',
-		[`traefik.http.routers.${config.prefix}_${serviceName}-http.rule`]: `Host(\`${hostName}\`)`,
-		[`traefik.http.routers.${config.prefix}_${serviceName}-http.service`]: `${config.prefix}_${serviceName}`,
-
-		[`traefik.http.routers.${config.prefix}_${serviceName}.tls`]: true,
-		[`traefik.http.routers.${config.prefix}_${serviceName}.entrypoints`]:
-			'websecure',
-		[`traefik.http.routers.${config.prefix}_${serviceName}.rule`]: `Host(\`${hostName}\`)`,
-		[`traefik.http.routers.${config.prefix}_${serviceName}.service`]: `${config.prefix}_${serviceName}`,
-	}
+	return flattenObject({
+		traefik: {
+			enable: true,
+			http: {
+				services: {
+					[fullServiceName]: { loadbalancer: { server: { port } } },
+				},
+				routers: {
+					[`${fullServiceName}-http`]: {
+						entrypoints: 'web',
+						middlewares: 'https-redirect@file',
+						rule: `Host(\`${fullHostName}\`)`,
+						service: fullServiceName,
+					},
+					[`${fullServiceName}-https`]: {
+						tls: true,
+						entrypoints: 'websecure',
+						rule: `Host(\`${fullHostName}\`)`,
+						service: fullServiceName,
+					},
+				},
+			},
+		},
+	})
 }
 
 // 'traefik.enable': true,

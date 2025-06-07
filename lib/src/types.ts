@@ -57,6 +57,7 @@ export interface IInflatableDir<
 > {
 	readonly [familySym]: Taxonomy.FamilyEnum.inflatable
 	readonly [kindSym]: Taxonomy.KindEnum.dir
+	readonly contexts?: ProvidedContext[]
 
 	content: () => T | Promise<T>
 	withContext?: (...contexts: ProvidedContext[]) => IInflatableDir
@@ -65,6 +66,7 @@ export interface IInflatableDir<
 export interface IInflatableFile {
 	readonly [familySym]: Taxonomy.FamilyEnum.inflatable
 	readonly [kindSym]: Taxonomy.KindEnum.file
+	readonly contexts?: ProvidedContext[]
 
 	content: () => unknown | Promise<unknown>
 	withContext?: (...contexts: ProvidedContext[]) => IInflatableFile
@@ -73,6 +75,7 @@ export interface IInflatableFile {
 export interface IInflatableReference {
 	readonly [familySym]: Taxonomy.FamilyEnum.inflatable
 	readonly [kindSym]: Taxonomy.KindEnum.reference
+	readonly contexts?: ProvidedContext[]
 
 	content: () => string | Promise<string>
 	withContext?: (...contexts: ProvidedContext[]) => IInflatableReference

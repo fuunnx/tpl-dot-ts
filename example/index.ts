@@ -11,8 +11,8 @@ Promise.resolve().then(async () => {
 	await defineDir({
 		development: input.withContext(Config.init('development')),
 		integ: input.withContext(Config.init('integ')),
-		preproduction: input.withContext(Config.init('preproduction')),
-		production: input.withContext(Config.init('production')),
+		// preproduction: input.withContext(Config.init('preproduction')),
+		// production: input.withContext(Config.init('production')),
 	}).write('./output.gen')
 
 	console.timeEnd('execution time')
