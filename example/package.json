@@ -1,8 +1,7 @@
 {
 	"type": "module",
 	"scripts": {
-		"build": "node --import oxidase/register index.ts",
-		"watch": "node --import oxidase/register --watch index.ts"
+		"watch": "tsx --watch ./index.ts"
 	},
 	"exports": {
 		"./": "./index.ts"
@@ -14,8 +13,7 @@
 		"tpl-dot-ts": "workspace:^"
 	},
 	"devDependencies": {
-		"concurrently": "^9.1.2",
-		"typescript": "^5.8.2",
-		"vite-node": "^3.0.9"
+		"tsx": "^4.19.4",
+		"typescript": "^5.8.2"
 	}
 }

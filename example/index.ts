@@ -1,11 +1,11 @@
+#!/usr/bin/env -S npx tsx
+
 import { configContext, createConfig, type Target } from './config.ts'
 import {
   Tpl,
   defineDir,
   type Inflatable,
 } from 'tpl-dot-ts'
-
-
 
 const input = await Tpl.from(import.meta, './input')
 
