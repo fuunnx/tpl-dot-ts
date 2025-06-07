@@ -8,12 +8,11 @@ import { InflatableFile } from './inflate/File.ts'
 import { fromPath } from './inflate/fromPath.ts'
 
 export const Tpl = {
-  async from(
-    importMeta: { url: string },
-    pathName: string,
-  ): Promise<InflatableFile | InflatableReference | InflatableDir> {
-    pathName = path.join(path.dirname(normalizePath(importMeta.url)), pathName)
-    return fromPath(pathName)
-  },
+	async from(
+		importMeta: { url: string },
+		pathName: string,
+	): Promise<InflatableFile | InflatableReference | InflatableDir> {
+		pathName = path.join(path.dirname(normalizePath(importMeta.url)), pathName)
+		return fromPath(pathName)
+	},
 }
-

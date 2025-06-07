@@ -1,5 +1,4 @@
 export * from './inflate.ts'
 export * from './define.ts'
-export * as lib from './lib.ts'
-export { createContext } from './context.ts'
+export { createContext, type ProvidedContext } from './context.ts'
 export * from './types.ts'

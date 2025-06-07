@@ -1,8 +1,7 @@
-import { configContext } from '../../config.ts'
-
+import { Config } from '../../config.ts'
 
 export default function Default() {
-  const config = configContext.use()
+	const config = Config.getContextValue()
 
-  return `Target is ${config.target}`
+	return `Target is ${config.target}`
 }

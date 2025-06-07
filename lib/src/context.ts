@@ -1,47 +1,57 @@
 import { fail } from 'node:assert'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
-type Context<T> = {
-  '~storage': AsyncLocalStorage<T | EMPTY>
-  provide(value: T): ProvidedContext<T>
-  use(): T
+export type ProvidedContext<T = unknown> = {
+	'~storage': AsyncLocalStorage<T | EMPTY>
+	value: T
 }
-export type ProvidedContext<T = unknown> = [AsyncLocalStorage<T | EMPTY>, T]
 
 export async function runWithContexts<R>(
-  contexts: ProvidedContext[],
-  fn: () => Promise<R>,
+	contexts: ProvidedContext[],
+	fn: () => Promise<R>,
 ): Promise<R> {
-  const reversed = [...contexts].reverse()
-  for (const [storage, value] of reversed) {
-    const prevFunction = fn
-    fn = () => {
-      return storage.run(value, async () => await prevFunction())
-    }
-  }
-  return fn()
+	const reversed = [...contexts].reverse()
+	for (const context of reversed) {
+		const { '~storage': storage, value } = context
+		const prevFunction = fn
+		fn = () => {
+			return storage.run(value, async () => await prevFunction())
+		}
+	}
+	return fn()
 }
 
 const EMPTY = Symbol('empty')
 type EMPTY = typeof EMPTY
-export function createContext<T>(
-  name: string,
-  getDefaultValue: () => T = () =>
-    fail(`No default value for context: ${name}`),
-): Context<T> {
-  const storage = new AsyncLocalStorage<T | EMPTY>()
-  storage.enterWith(EMPTY)
-  return {
-    ['~storage']: storage,
 
-    provide(value: T): ProvidedContext<T> {
-      return [storage, value] as const
-    },
+export function createContext<T>(name: string, getDefaultValue?: () => T) {
+	const storage = new AsyncLocalStorage<T | EMPTY>()
+	storage.enterWith(EMPTY)
 
-    use() {
-      const value = storage.getStore()
-      if (value === EMPTY) return getDefaultValue()
-      else return value!
-    },
-  }
+	// Most non JS developers are more familiar with object oriented patterns, so I favor it in place of factory functions
+	class Context implements ProvidedContext<T> {
+		readonly '~storage' = storage
+
+		readonly value: T
+		constructor(value: T) {
+			this.value = value
+		}
+
+		static createInstance = (value: T) => {
+			return new Context(value)
+		}
+
+		static getContextValue = () => {
+			const value = storage.getStore()
+			if (value === EMPTY) return this.getDefaultValue()
+			else return value!
+		}
+
+		static getDefaultValue = (): T => {
+			if (getDefaultValue) return getDefaultValue()
+			return fail(`No default value for context: ${name}`)
+		}
+	}
+
+	return Context
 }
