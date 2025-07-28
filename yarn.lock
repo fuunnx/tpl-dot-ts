@@ -5,6 +5,17 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
+"02-docker-compose-65595e@workspace:examples/02-docker-compose":
+  version: 0.0.0-use.local
+  resolution: "02-docker-compose-65595e@workspace:examples/02-docker-compose"
+  dependencies:
+    "@stdlib/utils-flatten-object": "npm:^0.2.2"
+    tpl-dot-ts: "workspace:^"
+    tsx: "npm:^4.19.4"
+    typescript: "npm:^5.8.2"
+  languageName: unknown
+  linkType: soft
+
 "@biomejs/biome@npm:1.9.4":
   version: 1.9.4
   resolution: "@biomejs/biome@npm:1.9.4"
@@ -1785,17 +1796,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"example-3bb12e@workspace:example":
-  version: 0.0.0-use.local
-  resolution: "example-3bb12e@workspace:example"
-  dependencies:
-    "@stdlib/utils-flatten-object": "npm:^0.2.2"
-    tpl-dot-ts: "workspace:^"
-    tsx: "npm:^4.19.4"
-    typescript: "npm:^5.8.2"
-  languageName: unknown
-  linkType: soft
-
 "exponential-backoff@npm:^3.1.1":
   version: 3.1.2
   resolution: "exponential-backoff@npm:3.1.2"
@@ -2402,6 +2402,15 @@ __metadata:
   checksum: 10c0/d4679609bb2a9b48eeaf84632b6d844128d2412b95b6de07d53d8ee8baf4ca0857c9331dfa510390a0727b550fd543d4d1a10995ad86cdf078423fbb8d99831d
   languageName: node
   linkType: hard
+
+"tpl-dot-ts-example-quick-start@workspace:examples/01-quick-start":
+  version: 0.0.0-use.local
+  resolution: "tpl-dot-ts-example-quick-start@workspace:examples/01-quick-start"
+  dependencies:
+    tpl-dot-ts: "workspace:^"
+    tsx: "npm:^4.19.4"
+  languageName: unknown
+  linkType: soft
 
 "tpl-dot-ts-workspace-root@workspace:.":
   version: 0.0.0-use.local

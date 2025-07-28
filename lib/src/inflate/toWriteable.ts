@@ -30,7 +30,7 @@ function print(outputFileName: string, content: unknown) {
 
 	if (printedValue === null) {
 		throw new Error(
-			`No printer found for ${outputFileName} and value of type ${typeof content}. Printer used: ${printer.name}`,
+			`No printer found for ${JSON.stringify(outputFileName)} and value of type "${typeof content}". Printer used: ${printer.name}`,
 		)
 	}
 

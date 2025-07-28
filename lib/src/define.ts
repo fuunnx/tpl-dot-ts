@@ -13,12 +13,17 @@ export function defineDir<T extends InflatableDirContent>(
 	return InflatableDir.fromEntries(entries)
 }
 
-export function defineFile(content: unknown): IInflatableFile {
+export function defineFile<T extends unknown>(content: T | (() => T)): IInflatableFile {
 	return {
 		[familySym]: Taxonomy.FamilyEnum.inflatable,
 		[kindSym]: Taxonomy.KindEnum.file,
 		content() {
-			return content
+      if (typeof content === 'function') {
+        // @ts-expect-error content may be a function expecting args
+        return content()
+      } else {
+        return content
+      }
 		},
 	}
 }
