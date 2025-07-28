@@ -1,7 +1,7 @@
 {
 	"type": "module",
 	"scripts": {
-		"watch": "tsx --watch ./index.ts"
+		"watch": "tsx --watch ./run.ts"
 	},
 	"exports": {
 		"./": "./index.ts"
