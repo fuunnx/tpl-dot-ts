@@ -8,7 +8,7 @@ COMPOSE_PROJECT_NAME=${config.prefix}
 
 COMPOSE_FILE=${config.target === 'development' ? 'docker/docker-compose.yml' : 'docker-compose.yml'}
 
-REALTY_HOSTNAME=${config.host}
+APP_HOSTNAME=${config.host}
 
 ${config.target === 'development' ? '' : `/stacks/storage/${config.prefix}`}
   `.trim()

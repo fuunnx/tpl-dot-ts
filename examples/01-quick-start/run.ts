@@ -1,6 +1,8 @@
 #!/usr/bin/env -S npx tsx
-// The line above is a shebang. It tells the system to execute this
+
+// ⬆️ The line above is a shebang. It tells the system to execute this
 // file using 'tsx', a tool that can run TypeScript files directly.
+
 import { Tpl, defineDir } from 'tpl-dot-ts'
 import { Config } from './config.ts'
 
@@ -10,8 +12,8 @@ async function main() {
 
   // 2. Define the output structure, applying a different context for each language.
   const output = defineDir({
-    english: template.withContext(Config.init({ name: 'World' })),
-    french: template.withContext(Config.init({ name: 'Monde' })),
+    english: template.withContext(new Config({ name: 'World' })),
+    french: template.withContext(new Config({ name: 'Monde' })),
   })
 
   // 3. Write the result to the 'generated' directory.

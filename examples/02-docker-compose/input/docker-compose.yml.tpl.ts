@@ -50,7 +50,7 @@ export default function Docker() {
 
 			get db() {
 				return defineDockerComposeService('db', {
-					image: `registry.projects.nartex.fr/nartex/system/citus-postgis:${docker.citus_version}`,
+					image: `registry.projects.demo.fr/demo/system/citus-postgis:${docker.citus_version}`,
 					env_file: ['./environment/db.env'],
 					user: vars.user || undefined,
 					networks: ['default'],
@@ -139,7 +139,7 @@ export default function Docker() {
 
 			get api() {
 				return defineDockerComposeService('api', {
-					image: `realty/api:${docker.api_version}`,
+					image: `demo/api:${docker.api_version}`,
 
 					env_file: ['.env'],
 				})
@@ -184,27 +184,3 @@ function traefikLabels(serviceName: string, options: TraefikLabelsOptions) {
 		},
 	})
 }
-
-// 'traefik.enable': true,
-
-// [`traefik.http.services.${config.prefix}_minio.loadbalancer.server.port`]: 9000,
-// [`traefik.http.routers.${config.prefix}_minio-http.entrypoints`]: 'web',
-// [`traefik.http.routers.${config.prefix}_minio-http.middlewares`]: 'https-redirect@file',
-// [`traefik.http.routers.${config.prefix}_minio-http.rule`]: 'Host(`files.${REALTY_HOSTNAME}`)',
-// [`traefik.http.routers.${config.prefix}_minio-http.service`]: `${config.prefix}_minio`,
-
-// [`traefik.http.routers.${config.prefix}_minio.tls`]: true,
-// [`traefik.http.routers.${config.prefix}_minio.entrypoints`]: 'websecure',
-// [`traefik.http.routers.${config.prefix}_minio.rule`]: 'Host(`files.${REALTY_HOSTNAME}`)',
-// [`traefik.http.routers.${config.prefix}_minio.service`]: `${config.prefix}_minio`,
-
-// [`traefik.http.services.${config.prefix}_minio_console.loadbalancer.server.port`]: 9001,
-// [`traefik.http.routers.${config.prefix}_minio_console-http.entrypoints`]: 'web',
-// [`traefik.http.routers.${config.prefix}_minio_console-http.middlewares`]: 'https-redirect@file',
-// [`traefik.http.routers.${config.prefix}_minio_console-http.rule`]: 'Host(`minio.${REALTY_HOSTNAME}`)',
-// [`traefik.http.routers.${config.prefix}_minio_console-http.service`]: `${config.prefix}_minio_console`,
-
-// [`traefik.http.routers.${config.prefix}_minio_console.tls`]: true,
-// [`traefik.http.routers.${config.prefix}_minio_console.entrypoints`]: 'websecure',
-// [`traefik.http.routers.${config.prefix}_minio_console.rule`]: 'Host(`minio.${REALTY_HOSTNAME}`)',
-// [`traefik.http.routers.${config.prefix}_minio_console.service`]: `${config.prefix}_minio_console`,

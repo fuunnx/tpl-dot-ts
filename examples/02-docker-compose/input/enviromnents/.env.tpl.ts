@@ -13,7 +13,7 @@ export default function Env() {
 			default: 'docker-compose.yml',
 		}),
 
-		REALTY_HOSTNAME: config.host,
+		APP_HOSTNAME: config.host,
 
 		'# this is a way to write comments !': '',
 

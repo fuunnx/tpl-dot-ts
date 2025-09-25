@@ -23,9 +23,9 @@ export type Target = 'development' | 'integ' | 'preproduction' | 'production'
 function createConfig(target: Target) {
 	return {
 		target,
-		prefix: `nartex-${target}`,
-		host: 'nartex.fr',
-		hostName: 'nartex.fr',
+		prefix: `demo-${target}`,
+		host: 'demo.fr',
+		hostName: 'demo.fr',
 
 		docker: {
 			front_version: select(target, {
@@ -53,11 +53,11 @@ function createConfig(target: Target) {
 
 		vars: {
 			host: select(target, {
-				default: 'realty.test',
-				development: 'realty.test',
-				integ: 'realty.integ.nartest.fr',
-				preproduction: 'preprod.realty.fr',
-				production: 'realty.fr',
+				default: 'demo.test',
+				development: 'demo.test',
+				integ: 'demo.integ.fr',
+				preproduction: 'demo.preprod.fr',
+				production: 'demo.fr',
 			} as const),
 
 			typesense_api_key: select(target, {

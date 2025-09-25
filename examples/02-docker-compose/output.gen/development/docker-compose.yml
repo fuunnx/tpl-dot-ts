@@ -16,8 +16,8 @@ volumes:
   percolate-data:
 services:
   db:
-    hostname: nartex-development-db
-    image: registry.projects.nartex.fr/nartex/system/citus-postgis:internal-todo
+    hostname: demo-development-db
+    image: registry.projects.demo.fr/demo/system/citus-postgis:internal-todo
     env_file:
       - ./environment/db.env
     networks:
@@ -35,7 +35,7 @@ services:
       - ./config/citus/docker-entrypoint-initdb.d/multi-databases.sh:/docker-entrypoint-initdb.d/multi-databases.sh
       - postgres-data:/var/lib/postgresql/data
   typesense:
-    hostname: nartex-development-typesense
+    hostname: demo-development-typesense
     image: typesense/typesense:1-2-3
     env_file:
       - ./environment/typesense.env
@@ -48,7 +48,7 @@ services:
     volumes:
       - typesense-data:/data
   minio:
-    hostname: nartex-development-minio
+    hostname: demo-development-minio
     image: minio/minio:RELEASE.2022-08-26T19-53-15Z.fips
     command: "server /data --console-address :9001 #http://minio/data"
     env_file:
@@ -70,26 +70,26 @@ services:
       - minio-data:/data
     labels:
       traefik.enable: true
-      traefik.http.services.nartex-development_minio.loadbalancer.server.port: 9000
-      traefik.http.routers.nartex-development_minio-http.entrypoints: web
-      traefik.http.routers.nartex-development_minio-http.middlewares: https-redirect@file
-      traefik.http.routers.nartex-development_minio-http.rule: Host(`files.nartex.fr`)
-      traefik.http.routers.nartex-development_minio-http.service: nartex-development_minio
-      traefik.http.routers.nartex-development_minio-https.tls: true
-      traefik.http.routers.nartex-development_minio-https.entrypoints: websecure
-      traefik.http.routers.nartex-development_minio-https.rule: Host(`files.nartex.fr`)
-      traefik.http.routers.nartex-development_minio-https.service: nartex-development_minio
-      traefik.http.services.nartex-development_minio_console.loadbalancer.server.port: 9000
-      traefik.http.routers.nartex-development_minio_console-http.entrypoints: web
-      traefik.http.routers.nartex-development_minio_console-http.middlewares: https-redirect@file
-      traefik.http.routers.nartex-development_minio_console-http.rule: Host(`minio.nartex.fr`)
-      traefik.http.routers.nartex-development_minio_console-http.service: nartex-development_minio_console
-      traefik.http.routers.nartex-development_minio_console-https.tls: true
-      traefik.http.routers.nartex-development_minio_console-https.entrypoints: websecure
-      traefik.http.routers.nartex-development_minio_console-https.rule: Host(`minio.nartex.fr`)
-      traefik.http.routers.nartex-development_minio_console-https.service: nartex-development_minio_console
+      traefik.http.services.demo-development_minio.loadbalancer.server.port: 9000
+      traefik.http.routers.demo-development_minio-http.entrypoints: web
+      traefik.http.routers.demo-development_minio-http.middlewares: https-redirect@file
+      traefik.http.routers.demo-development_minio-http.rule: Host(`files.demo.fr`)
+      traefik.http.routers.demo-development_minio-http.service: demo-development_minio
+      traefik.http.routers.demo-development_minio-https.tls: true
+      traefik.http.routers.demo-development_minio-https.entrypoints: websecure
+      traefik.http.routers.demo-development_minio-https.rule: Host(`files.demo.fr`)
+      traefik.http.routers.demo-development_minio-https.service: demo-development_minio
+      traefik.http.services.demo-development_minio_console.loadbalancer.server.port: 9000
+      traefik.http.routers.demo-development_minio_console-http.entrypoints: web
+      traefik.http.routers.demo-development_minio_console-http.middlewares: https-redirect@file
+      traefik.http.routers.demo-development_minio_console-http.rule: Host(`minio.demo.fr`)
+      traefik.http.routers.demo-development_minio_console-http.service: demo-development_minio_console
+      traefik.http.routers.demo-development_minio_console-https.tls: true
+      traefik.http.routers.demo-development_minio_console-https.entrypoints: websecure
+      traefik.http.routers.demo-development_minio_console-https.rule: Host(`minio.demo.fr`)
+      traefik.http.routers.demo-development_minio_console-https.service: demo-development_minio_console
   api:
-    hostname: nartex-development-api
-    image: realty/api:release/3-4-debug
+    hostname: demo-development-api
+    image: demo/api:release/3-4-debug
     env_file:
       - .env
