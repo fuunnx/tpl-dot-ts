@@ -21,21 +21,18 @@ jobs:
         with:
           node-version: lts/*
           cache: pnpm
-
-      - name: Move to lib
-        run: cd lib
  
       - name: Install
         run: pnpm install
 
       - name: Build
-        run: pnpm run build
+        run: cd lib && pnpm run build
 
       - name: Lint
-        run: pnpm run lint
+        run: cd lib && pnpm run lint
 
       - name: Typecheck
-        run: pnpm run typecheck
+        run: cd lib && pnpm run typecheck
 
       - name: Test
-        run: pnpm run test
+        run: cd lib && pnpm run test
