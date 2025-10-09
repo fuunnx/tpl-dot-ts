@@ -1,15 +1,12 @@
 import type { ProvidedContext } from './context.ts'
+import { stateSym, kindSym, type StateSym, type KindSym } from './internal.ts'
 
-export const familySym = Symbol('family')
-export type FamilySym = typeof familySym
-
-export const kindSym = Symbol('kind')
-export type KindSym = typeof kindSym
+export type { StateSym as FamilySym, KindSym }
 
 export namespace Taxonomy {
-	export enum FamilyEnum {
-		writeable = 'writeable',
-		inflatable = 'inflatable',
+	export enum StateEnum {
+		materialized = 'materialized',
+		template = 'template',
 	}
 	export enum KindEnum {
 		dir = 'dir',
@@ -18,81 +15,84 @@ export namespace Taxonomy {
 	}
 }
 type Taxonomy = {
-	readonly [familySym]: Taxonomy.FamilyEnum
+	readonly [stateSym]: Taxonomy.StateEnum
 	readonly [kindSym]: Taxonomy.KindEnum
 }
 
 //
 
-// writeable
-export type Writeable = WriteableDir | WriteableFile | WriteableReference
-export type WriteableDirContent = Record<string, Writeable>
+// materialized
+export type Materialized =
+	| MaterializedDir
+	| MaterializedFile
+	| MaterializedReference
+export type MaterializedDirContent = Record<string, Materialized>
 
-export interface WriteableDir<
-	T extends WriteableDirContent = WriteableDirContent,
+export interface MaterializedDir<
+	T extends MaterializedDirContent = MaterializedDirContent,
 > {
-	readonly [familySym]: Taxonomy.FamilyEnum.writeable
+	readonly [stateSym]: Taxonomy.StateEnum.materialized
 	readonly [kindSym]: Taxonomy.KindEnum.dir
 	content: T
 }
 
-export interface WriteableFile {
-	readonly [familySym]: Taxonomy.FamilyEnum.writeable
+export interface MaterializedFile {
+	readonly [stateSym]: Taxonomy.StateEnum.materialized
 	readonly [kindSym]: Taxonomy.KindEnum.file
 	content: string // maybe implement stream interface too for better perf ?
 }
 
-export interface WriteableReference {
-	readonly [familySym]: Taxonomy.FamilyEnum.writeable
+export interface MaterializedReference {
+	readonly [stateSym]: Taxonomy.StateEnum.materialized
 	readonly [kindSym]: Taxonomy.KindEnum.reference
 	path: string
 }
 
-// inflatable
-export type Inflatable = IInflatableDir | IInflatableFile | IInflatableReference
-export type InflatableDirContent = Record<string, Inflatable>
+// Template
+export type Template = ITemplateDir | ITemplateFile | ITemplateReference
+export type TemplateDirContent = Record<string, Template>
 
-export interface IInflatableDir<
-	T extends InflatableDirContent = InflatableDirContent,
+export interface ITemplateDir<
+	T extends TemplateDirContent = TemplateDirContent,
 > {
-	readonly [familySym]: Taxonomy.FamilyEnum.inflatable
+	readonly [stateSym]: Taxonomy.StateEnum.template
 	readonly [kindSym]: Taxonomy.KindEnum.dir
 	readonly contexts?: ProvidedContext[]
 
 	content: () => T | Promise<T>
-	withContext?: (...contexts: ProvidedContext[]) => IInflatableDir
+	withContext?: (...contexts: ProvidedContext[]) => ITemplateDir
 }
 
-export interface IInflatableFile {
-	readonly [familySym]: Taxonomy.FamilyEnum.inflatable
+export interface ITemplateFile {
+	readonly [stateSym]: Taxonomy.StateEnum.template
 	readonly [kindSym]: Taxonomy.KindEnum.file
 	readonly contexts?: ProvidedContext[]
 
 	content: () => unknown | Promise<unknown>
-	withContext?: (...contexts: ProvidedContext[]) => IInflatableFile
+	withContext?: (...contexts: ProvidedContext[]) => ITemplateFile
 }
 
-export interface IInflatableReference {
-	readonly [familySym]: Taxonomy.FamilyEnum.inflatable
+export interface ITemplateReference {
+	readonly [stateSym]: Taxonomy.StateEnum.template
 	readonly [kindSym]: Taxonomy.KindEnum.reference
 	readonly contexts?: ProvidedContext[]
 
 	content: () => string | Promise<string>
-	withContext?: (...contexts: ProvidedContext[]) => IInflatableReference
+	withContext?: (...contexts: ProvidedContext[]) => ITemplateReference
 }
 
 // utilities
 
-export type Inflate<T extends Inflatable> = T extends IInflatableDir<
-	infer DirContent extends InflatableDirContent
+export type Materialize<T extends Template> = T extends ITemplateDir<
+	infer DirContent extends TemplateDirContent
 >
-	? WriteableDir<InflateDirContent<DirContent>>
-	: T extends IInflatableFile
-		? WriteableFile
-		: T extends IInflatableReference
-			? WriteableReference
+	? MaterializedDir<MaterializeDirContent<DirContent>>
+	: T extends ITemplateFile
+		? MaterializedFile
+		: T extends ITemplateReference
+			? MaterializedReference
 			: never
 
-type InflateDirContent<T extends InflatableDirContent> = {
-	[K in keyof T]: Inflate<T[K]>
+type MaterializeDirContent<T extends TemplateDirContent> = {
+	[K in keyof T]: Materialize<T[K]>
 }

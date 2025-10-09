@@ -1,29 +1,30 @@
-import { InflatableDir } from './inflate/Dir.ts'
+import { TemplateDir } from './template/Dir.ts'
 import {
-	type InflatableDirContent,
-	type IInflatableFile,
-	familySym,
+	type TemplateDirContent,
+	type ITemplateFile,
 	Taxonomy,
-	kindSym,
 } from './types.ts'
+import { stateSym, kindSym } from './internal.ts'
 
-export function defineDir<T extends InflatableDirContent>(
+export function defineDir<T extends TemplateDirContent>(
 	entries: T,
-): InflatableDir<T> {
-	return InflatableDir.fromEntries(entries)
+): TemplateDir<T> {
+	return TemplateDir.fromEntries(entries)
 }
 
-export function defineFile<T extends unknown>(content: T | (() => T)): IInflatableFile {
+export function defineFile<T extends unknown>(
+	content: T | (() => T),
+): ITemplateFile {
 	return {
-		[familySym]: Taxonomy.FamilyEnum.inflatable,
+		[stateSym]: Taxonomy.StateEnum.template,
 		[kindSym]: Taxonomy.KindEnum.file,
 		content() {
-      if (typeof content === 'function') {
-        // @ts-expect-error content may be a function expecting args
-        return content()
-      } else {
-        return content
-      }
+			if (typeof content === 'function') {
+				// @ts-expect-error content may be a function expecting args
+				return content()
+			} else {
+				return content
+			}
 		},
 	}
 }

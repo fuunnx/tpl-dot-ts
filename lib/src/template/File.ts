@@ -1,17 +1,16 @@
 import fs from 'node:fs'
 import { type ProvidedContext, runWithContexts } from '../context.ts'
 import {
-	familySym,
-	kindSym,
 	Taxonomy,
-	type IInflatableFile,
-	type WriteableFile,
+	type ITemplateFile,
+	type MaterializedFile,
 } from '../types.ts'
 import { normalizePath } from '../lib/normalizePath.ts'
 import { writeFile } from './write.ts'
-import { toWritable } from './toWriteable.ts'
-export class InflatableFile implements IInflatableFile {
-	readonly [familySym] = Taxonomy.FamilyEnum.inflatable
+import { materialize } from './materialize.ts'
+import { stateSym, kindSym } from '../internal.ts'
+export class TemplateFile implements ITemplateFile {
+	readonly [stateSym] = Taxonomy.StateEnum.template
 	readonly [kindSym] = Taxonomy.KindEnum.file
 
 	#pathName: string
@@ -26,11 +25,11 @@ export class InflatableFile implements IInflatableFile {
 		pathName = normalizePath(pathName)
 		// check if exists
 		await fs.promises.stat(pathName)
-		return new InflatableFile(pathName)
+		return new TemplateFile(pathName)
 	}
 
 	withContext(...contexts: ProvidedContext[]) {
-		return new InflatableFile(this.#pathName, [...this.contexts, ...contexts])
+		return new TemplateFile(this.#pathName, [...this.contexts, ...contexts])
 	}
 
 	async content() {
@@ -42,8 +41,8 @@ export class InflatableFile implements IInflatableFile {
 		}
 	}
 
-	async toWritable(outputFileName: string): Promise<WriteableFile> {
-		return toWritable(this, outputFileName)
+	async toWritable(outputFileName: string): Promise<MaterializedFile> {
+		return materialize(this, outputFileName)
 	}
 
 	async write(outputFileName: string) {

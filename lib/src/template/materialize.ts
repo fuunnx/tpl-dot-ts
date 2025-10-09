@@ -6,16 +6,15 @@ import {
 	yamlPrinter,
 } from '../printers/printers.ts'
 import {
-	familySym,
-	kindSym,
 	Taxonomy,
-	type Inflate,
-	type Inflatable,
-	type Writeable,
-	type WriteableDir,
-	type WriteableFile,
-	type WriteableReference,
+	type Materialize,
+	type Template,
+	type Materialized,
+	type MaterializedDir,
+	type MaterializedFile,
+	type MaterializedReference,
 } from '../types.ts'
+import { stateSym, kindSym } from '../internal.ts'
 import { mapValuesAsync } from '../lib/mapValuesAsync.ts'
 import { runWithContexts } from '../context.ts'
 
@@ -37,66 +36,66 @@ function print(outputFileName: string, content: unknown) {
 	return printedValue
 }
 
-function isInflatable(value: unknown): value is Inflatable {
+function isTemplate(value: unknown): value is Template {
 	return (
 		value !== null &&
 		typeof value === 'object' &&
-		familySym in value &&
-		value[familySym] === Taxonomy.FamilyEnum.inflatable
+		stateSym in value &&
+		value[stateSym] === Taxonomy.StateEnum.template
 	)
 }
-function isWriteable(value: unknown): value is Writeable {
+function isMaterialized(value: unknown): value is Materialized {
 	return (
 		value !== null &&
 		typeof value === 'object' &&
-		familySym in value &&
-		value[familySym] === Taxonomy.FamilyEnum.writeable
+		stateSym in value &&
+		value[stateSym] === Taxonomy.StateEnum.materialized
 	)
 }
 
-export async function toWritable<T extends Inflatable>(
+export async function materialize<T extends Template>(
 	inflatable: T,
 	outputFileName: string,
-): Promise<Inflate<T>> {
+): Promise<Materialize<T>> {
 	return runWithContexts(inflatable.contexts ?? [], async () => {
 		if (inflatable[kindSym] === Taxonomy.KindEnum.file) {
 			let content = await inflatable.content()
 
-			if (isInflatable(content)) {
-				return (await toWritable(content, outputFileName)) as Inflate<T>
+			if (isTemplate(content)) {
+				return (await materialize(content, outputFileName)) as Materialize<T>
 			}
-			if (isWriteable(content)) {
-				return content as Inflate<T>
+			if (isMaterialized(content)) {
+				return content as Materialize<T>
 			}
 
 			return {
-				[familySym]: Taxonomy.FamilyEnum.writeable,
+				[stateSym]: Taxonomy.StateEnum.materialized,
 				[kindSym]: Taxonomy.KindEnum.file,
 				content: print(outputFileName, content),
-			} satisfies WriteableFile as Inflate<T>
+			} satisfies MaterializedFile as Materialize<T>
 		}
 
 		if (inflatable[kindSym] === Taxonomy.KindEnum.reference) {
 			return {
-				[familySym]: Taxonomy.FamilyEnum.writeable,
+				[stateSym]: Taxonomy.StateEnum.materialized,
 				[kindSym]: Taxonomy.KindEnum.reference,
 				path: await inflatable.content(),
-			} satisfies WriteableReference as Inflate<T>
+			} satisfies MaterializedReference as Materialize<T>
 		}
 
 		if (inflatable[kindSym] === Taxonomy.KindEnum.dir) {
-			const content: WriteableDir['content'] = await mapValuesAsync(
+			const content: MaterializedDir['content'] = await mapValuesAsync(
 				await inflatable.content(),
 				(value, key) => {
-					return toWritable(value, key)
+					return materialize(value, key)
 				},
 			)
 
 			return {
-				[familySym]: Taxonomy.FamilyEnum.writeable,
+				[stateSym]: Taxonomy.StateEnum.materialized,
 				[kindSym]: Taxonomy.KindEnum.dir,
 				content,
-			} satisfies WriteableDir as Inflate<T>
+			} satisfies MaterializedDir as Materialize<T>
 		}
 
 		throw new Error(`Unknown kind ${inflatable[kindSym]}`)

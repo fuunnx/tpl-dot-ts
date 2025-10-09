@@ -1,16 +1,16 @@
 import path from 'node:path'
 
-import { InflatableDir } from './inflate/Dir.ts'
-import { InflatableReference } from './inflate/Reference.ts'
+import { TemplateDir } from './template/Dir.ts'
+import { TemplateReference } from './template/Reference.ts'
 import { normalizePath } from './lib/normalizePath.ts'
-import { InflatableFile } from './inflate/File.ts'
-import { fromPath } from './inflate/fromPath.ts'
+import { TemplateFile } from './template/File.ts'
+import { fromPath } from './template/fromPath.ts'
 
 export const Tpl = {
 	async from(
 		importMeta: { url: string },
 		pathName: string,
-	): Promise<InflatableFile | InflatableReference | InflatableDir> {
+	): Promise<TemplateFile | TemplateReference | TemplateDir> {
 		pathName = path.join(path.dirname(normalizePath(importMeta.url)), pathName)
 		return fromPath(pathName)
 	},

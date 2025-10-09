@@ -3,63 +3,23 @@
 [![npm version](https://badge.fury.io/js/tpl-dot-ts.svg)](https://badge.fury.io/js/tpl-dot-ts)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A powerful and flexible scaffolding library for generating entire projects from TypeScript templates.
+`tpl-dot-ts` is a TypeScript scaffolding library that simplifies the generation of complex projects from templates. It offers a flexible and type-safe approach to creating dynamic file structures, using contexts to manage data and printers to format the output.
+
+It is ideal for use cases such as:
+
+*   Generating boilerplate code for new projects
+*   Creating API clients from OpenAPI specifications
+*   Building custom project structures with dynamic configurations
+
+By offering a flexible and type-safe approach to creating dynamic file structures, using contexts to manage data, and printers to format the output, `tpl-dot-ts` helps developers save time and ensure consistency across their projects.
 
 ## Core Concepts
 
-`tpl-dot-ts` helps you generate files from templates. It's designed to be flexible and easy to understand, even for developers new to TypeScript. It's built on three main ideas.
+`tpl-dot-ts` generates projects from templates using three core concepts:
 
-### 1. Templates: The Blueprint
-
-A "template" isn't just a single file; it can be an entire directory. When you point `tpl-dot-ts` to a directory, it will:
-
--   **Execute** all files ending in `.tpl.ts`.
--   **Copy** all other files and directories as-is.
-
-The transformation rule for filenames is simple: the `.tpl.ts` extension is always removed.
-> `[filename].tpl.ts` becomes `[filename]`
-
-This allows you to scaffold complex projects with a mix of static files (like images or `.css` files) and dynamic, context-aware files.
-
-Inside a `.tpl.ts` file, you define the output structure:
-
--   You use functions like `defineDir` and `defineFile` to declare directories and files.
--   The `export default` of a template determines the output.
--   Because templates are just TypeScript, you can use variables, functions, and `import`/`export` to organize your code and make it reusable.
-
-```typescript
-// a-simple-template.tpl.ts
-import { defineFile, defineDir } from 'tpl-dot-ts'
-
-export default defineDir({
-  'README.md': defineFile('This is a README file.'),
-  'src/': defineDir({
-    'index.js': defineFile('console.log("hello world")')
-  })
-})
-```
-
-### 2. Context: The Data
-
-A Context provides data to your templates. This is the key to making your templates reusable for different environments (e.g., `development` vs. `production`) or purposes, in a typesafe manner.
-
--   You create a context with `createContext`. This gives you a `Context` class.
--   Inside a template, you access the data with `MyContext.getContextValue()`.
--   You attach a context to a template using `.withContext(new MyContext(data))`.
-
-This system allows you to keep your template structure clean and separate from the specific data it will use.
-
-### 3. Inflation & Printers: The Output
-
-`tpl-dot-ts` doesn't immediately write files. Instead, it builds a description of what *should* be written. The final step is the "inflation", where this description is turned into actual files and content on your disk.
-
-A powerful feature here is the use of **Printers**. A "printer" is a function that knows how to convert a JavaScript object or value into a string for a specific file type.
-
--   For a `.json` file, the printer is `JSON.stringify`.
--   For a `.yaml` file, a printer would use a YAML library to serialize the object.
--   For a `.env` file, a printer would format the data as `KEY=VALUE` pairs.
-
-This is often handled by utility functions you can write or share. For example, `defineFile({ hello: 'world' })` can produce a JSON file if the final file path ends with `.json`.
+*   **Templates:** Directories or `.tpl.ts` files that define the project structure. `.tpl.ts` files are executed to generate dynamic content.
+*   **Contexts:** Provide type-safe data to templates, enabling reusability across different environments.
+*   **Materialization & Printers:** Transforms the template description into actual files and content, using printers to format the output for different file types (e.g., JSON, YAML).
 
 ## Installation
 
@@ -73,9 +33,9 @@ yarn add --dev tpl-dot-ts
 
 ## Quick Start Guide
 
-> **Note:** You can find a complete, runnable version of this guide in the [`examples/01-quick-start`](./examples/01-quick-start) directory.
+> **Note:** A complete, runnable version is in [`examples/01-quick-start`](./examples/01-quick-start).
 
-Let's create a project that generates personalized greetings, including a static file.
+This guide generates personalized greetings with a static file.
 
 ### 1. Set up the Project Structure
 
@@ -92,21 +52,18 @@ Create the following directory structure:
 
 ### 2. Create the Template Files
 
-First, the static file that will be copied as-is:
+`templates/static.txt`:
 
 ```
-// templates/static.txt
 This file is static and will be copied directly.
 ```
 
-Next, the dynamic template that uses the context:
+`templates/greeting.tpl.ts`:
 
 ```typescript
-// templates/greeting.tpl.ts
 import { defineFile } from 'tpl-dot-ts'
 import { Config } from '../config.ts'
 
-// The default export defines the output. Here, it's a single file.
 export default defineFile(() => {
   const config = Config.getContextValue()
   return `Hello, ${config.name}!`
@@ -115,16 +72,14 @@ export default defineFile(() => {
 
 ### 3. Define the Context
 
-Now, create the context file to provide data.
+`config.ts`:
 
 ```typescript
-// config.ts
 import { createContext } from 'tpl-dot-ts'
 
 type ConfigShape = { name: string }
 
 export class Config extends createContext<ConfigShape>('config', () => ({ name: 'World' })) {
-  // Add an initializer for convenience
   static init(data: ConfigShape) {
     return new Config(data)
   }
@@ -133,29 +88,22 @@ export class Config extends createContext<ConfigShape>('config', () => ({ name: 
 
 ### 4. Create the Runner Script
 
-Finally, the script that brings it all together.
+`run.ts`:
 
 ```typescript
 #!/usr/bin/env -S npx tsx
-// The line above is a shebang. It tells the system to execute this
-// file using 'tsx', a tool that can run TypeScript files directly.
-// run.ts
 import { Tpl, defineDir } from 'tpl-dot-ts'
 import { Config } from './config.ts'
 
 async function main() {
-  // 1. Load the entire 'templates' directory.
   const template = await Tpl.from(import.meta, './templates')
 
-  // 2. Define the output structure, applying a different context for each language.
   const output = defineDir({
     english: template.withContext(Config.init({ name: 'World' })),
     french: template.withContext(Config.init({ name: 'Monde' })),
   })
 
-  // 3. Write the result to the 'generated' directory.
   await output.write('./generated')
-
   console.log('Done! Check the "generated" directory.')
 }
 
@@ -164,23 +112,20 @@ main()
 
 ### 5. Run it!
 
-Execute the script from your terminal:
-
 ```sh
-# on first run, you need to make it executable
 chmod +x ./run.ts
 ./run.ts
 ```
 
-You will see a new `generated` directory containing both the dynamically generated and the static files:
+Output:
 
 ```
 generated/
 ├── english/
-│   ├── greeting  (contains "Hello, World!")
+│   ├── greeting  (Hello, World!)
 │   └── static.txt    (copied)
 └── french/
-    ├── greeting  (contains "Hello, Monde!")
+    ├── greeting  (Hello, Monde!)
     └── static.txt    (copied)
 ```
 
@@ -190,52 +135,50 @@ generated/
 
 Loads a template from the file system.
 
--   `importMeta`: Pass `import.meta` here. It's used to resolve the path relative to the current file.
--   `path`: A relative path to the template file or directory.
+-   `importMeta`: `import.meta` for relative path resolution.
+-   `path`: Template file or directory path.
 
-If `path` points to a directory, all `.tpl.ts` files are executed and other files are copied. If it points to a single file, only that file is loaded.
-
-Returns an `Inflatable` object that can be customized with a context.
+Returns a `Template`.
 
 ### `defineDir(entries)`
 
-Defines a directory structure.
+Defines a directory.
 
--   `entries`: An object where keys are file/directory names (e.g., `'src'` or `'README.md'`) and values are other `Inflatable` objects (from `defineDir`, `defineFile`, or `Tpl.from`).
+-   `entries`: File/directory names and their `Template` objects.
 
-Returns an `InflatableDir`.
+Returns a `TemplateDir`.
 
 ### `defineFile(content)`
 
 Defines a file.
 
--   `content`: The content of the file. This can be a `string`, any value that can be serialized to JSON or YAML (if the output file has that extension), or a function `() => content` that returns the content. Using a function allows you to access context.
+-   `content`: File content (string, JSON/YAML serializable, or a function returning the content).
 
-Returns an `InflatableFile`.
+Returns a `TemplateFile`.
 
 ### `createContext<T>(name, ?defaultValue)`
 
-Creates a new Context class for providing type-safe data to templates.
+Creates a Context class.
 
--   `<T>`: The TypeScript type for the data this context will hold.
--   `name`: A string name for the context, used for debugging.
+-   `<T>`: Data type for the context.
+-   `name`: Context name (for debugging).
 -   `defaultValue`: An optional function `() => T` that returns a default value if no context is provided.
 
 Returns a `Context` class with static methods `getContextValue()` and an instance constructor.
 
-### `inflatable.withContext(context)`
+### `template.withContext(context)`
 
-Attaches a context instance to an `Inflatable` (a template, dir, or file).
+Attaches a context to a `Template`.
 
--   `context`: An *instance* of a `Context` class (e.g., `new MyContext({ ... })`).
+-   `context`: A `Context` instance.
 
-Returns a new `Inflatable` with the context applied. All children of that inflatable will have access to the context.
+Returns a new `Template`.
 
-### `inflatable.write(path)`
+### `template.write(path)`
 
-The final step. This "inflates" the template and writes the entire directory structure to the disk.
+Writes the materialized template to disk.
 
--   `path`: The root directory where the output will be written.
+-   `path`: Output directory.
 
 ## Recipes
 
