@@ -2,7 +2,7 @@
 	"name": "tpl-dot-ts-workspace-root",
 	"type": "module",
 	"private": true,
-	"_workspaces": [
+	"workspaces": [
 		"./examples/*",
 		"./lib"
 	],

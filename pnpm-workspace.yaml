@@ -1,1 +1,7 @@
+packages:
+  - examples/*
+  - lib
 
+onlyBuiltDependencies:
+  - '@biomejs/biome'
+  - esbuild
