@@ -1,6 +1,5 @@
 import path from 'node:path'
 
-import { register } from 'node:module'
 import { InflatableDir } from './inflate/Dir.ts'
 import { InflatableReference } from './inflate/Reference.ts'
 import { normalizePath } from './lib/normalizePath.ts'
