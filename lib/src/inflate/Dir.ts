@@ -64,16 +64,13 @@ export class InflatableDir<
 	}
 
 	async content(): Promise<Content> {
-		return (await mapValuesAsync(
-			this.#dirContent,
-			async (inflatable): Promise<typeof inflatable> => {
-				const withContext = inflatable.withContext
-					? inflatable.withContext(...this.contexts)
-					: inflatable
+		return (await mapValuesAsync(this.#dirContent, async (inflatable) => {
+			const withContext = inflatable.withContext
+				? inflatable.withContext(...this.contexts)
+				: inflatable
 
-				return withContext as typeof inflatable
-			},
-		)) as Content
+			return withContext as typeof inflatable
+		})) as Content
 	}
 
 	async toWritable(): Promise<WriteableDir> {

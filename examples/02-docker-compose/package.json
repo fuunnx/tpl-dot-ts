@@ -11,10 +11,11 @@
 	},
 	"dependencies": {
 		"@stdlib/utils-flatten-object": "^0.2.2",
+		"compose-spec-schema": "^1.0.0",
 		"tpl-dot-ts": "workspace:^"
 	},
 	"devDependencies": {
-		"tsx": "^4.19.4",
-		"typescript": "^5.8.2"
+		"tsx": "^4.20.6",
+		"typescript": "^5.9.3"
 	}
 }

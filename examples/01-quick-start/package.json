@@ -5,6 +5,6 @@
   "type": "module",
   "dependencies": {
     "tpl-dot-ts": "workspace:^",
-    "tsx": "^4.19.4"
+    "tsx": "^4.20.6"
   }
 }
