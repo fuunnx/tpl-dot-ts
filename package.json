@@ -6,7 +6,8 @@
 		"./examples/*",
 		"./lib"
 	],
-	"devDependencies": {
+  "packageManager": "pnpm@10.18.1",
+  "devDependencies": {
 		"@biomejs/biome": "1.9.4"
 	}
 }
