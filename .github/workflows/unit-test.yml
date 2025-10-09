@@ -36,12 +36,3 @@ jobs:
 
       - name: Test
         run: cd lib && pnpm run test
-
-      - name: Publish package
-        if: github.event_name == 'release' && github.event.action == 'created'
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
-          cd lib
-          pnpm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

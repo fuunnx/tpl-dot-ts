@@ -21,6 +21,15 @@ jobs:
         with:
           node-version: lts/*
 
-      - run: cd lib && npx changelogithub
+      - name: Generate changelog
+        run: cd lib && npx changelogithub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish package
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+          cd lib
+          pnpm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
