@@ -1,11 +1,6 @@
 import path from 'node:path'
 import { combinePrinters } from '../printers/lib.ts'
 import {
-	fallbackPrinter,
-	jsonPrinter,
-	yamlPrinter,
-} from '../printers/printers.ts'
-import {
 	Taxonomy,
 	type Materialize,
 	type Template,
@@ -17,14 +12,11 @@ import {
 import { stateSym, kindSym } from '../internal.ts'
 import { mapValuesAsync } from '../lib/mapValuesAsync.ts'
 import { runWithContexts } from '../context.ts'
+import { PrinterContext } from '../printers/PrinterContext.ts'
 
-const printer = combinePrinters([
-	yamlPrinter(),
-	jsonPrinter(),
-	fallbackPrinter(),
-])
 function print(outputFileName: string, content: unknown) {
 	const fileName = path.basename(outputFileName)
+	const printer = combinePrinters(PrinterContext.getContextValue())
 	const printedValue = printer.print(fileName, content)
 
 	if (printedValue === null) {

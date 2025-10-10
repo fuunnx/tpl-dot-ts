@@ -41,11 +41,11 @@ export class TemplateFile implements ITemplateFile {
 		}
 	}
 
-	async toWritable(outputFileName: string): Promise<MaterializedFile> {
+	async materialize(outputFileName: string): Promise<MaterializedFile> {
 		return materialize(this, outputFileName)
 	}
 
 	async write(outputFileName: string) {
-		return writeFile(await this.toWritable(outputFileName), outputFileName)
+		return writeFile(await this.materialize(outputFileName), outputFileName)
 	}
 }

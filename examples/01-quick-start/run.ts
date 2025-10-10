@@ -5,21 +5,35 @@
 
 import { Tpl, defineDir } from 'tpl-dot-ts'
 import { Config } from './config.ts'
+import { PrinterContext } from 'src/printers/PrinterContext.ts'
 
 async function main() {
-  // 1. Load the entire 'templates' directory.
-  const template = await Tpl.from(import.meta, './templates')
+	// 1. Load the entire 'templates' directory.
+	const template = await Tpl.from(import.meta, './templates')
 
-  // 2. Define the output structure, applying a different context for each language.
-  const output = defineDir({
-    english: template.withContext(new Config({ name: 'World' })),
-    french: template.withContext(new Config({ name: 'Monde' })),
-  })
+	// 2. Define the output structure, applying a different context for each language.
+	const output = defineDir({
+		english: template.withContext(new Config({ name: 'World' })),
+		french: template.withContext(
+			new Config({ name: 'Monde' }),
+			PrinterContext.prependedBy({
+				name: 'uppercase french',
+				print(fileName: string, data: unknown) {
+					if (fileName === 'greeting') {
+						return String(data)
+							.toLocaleUpperCase('fr-FR')
+							.replace('HELLO', 'SALUT')
+					}
+					return null
+				},
+			}),
+		),
+	})
 
-  // 3. Write the result to the 'generated' directory.
-  await output.write('./generated')
+	// 3. Write the result to the 'generated' directory.
+	await output.write('./generated')
 
-  console.log('Done! Check the "generated" directory.')
+	console.log('Done! Check the "generated" directory.')
 }
 
 main()

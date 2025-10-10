@@ -3,7 +3,7 @@ export function combinePrinters(printers: Printer[], name?: string): Printer {
 	return {
 		name:
 			name ??
-			`combinePrinters(${printers.map((printer) => printer.name).join(', ')})`,
+			`combinePrinters(${printers.map((printer) => printer.name ?? '<anonymous>').join(', ')})`,
 		print(fileName: string, data: unknown) {
 			let result: string | null = null
 

@@ -1,4 +1,4 @@
 export type Printer = {
-	name: string
+	name?: string
 	print: (fileName: string, data: unknown) => string | null
 }

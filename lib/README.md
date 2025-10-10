@@ -19,7 +19,7 @@ By offering a flexible and type-safe approach to creating dynamic file structure
 
 *   **Templates:** Directories or `.tpl.ts` files that define the project structure. `.tpl.ts` files are executed to generate dynamic content.
 *   **Contexts:** Provide type-safe data to templates, enabling reusability across different environments.
-*   **Materialization & Printers:** Transforms the template description into actual files and content, using printers to format the output for different file types (e.g., JSON, YAML).
+*   **Materialization & Printers:** Transforms the template description into actual files and content, using printers to format the output for different file types (e.g., JSON, YAML). You can customize the printers used by providing a `PrinterContext` to a Subtree.
 
 ## Installation
 
@@ -202,7 +202,6 @@ export default defineFile(() => {
 import { defineDir } from 'tpl-dot-ts'
 import userProfile from './user-profile.tpl.ts'
 
-// You can import another template and place it in the desired location.
 export default defineDir({
   'user/': defineDir({
     'profile.txt': userProfile,
@@ -231,37 +230,44 @@ const templateWithContexts = myTemplate
 
 ### Creating a Custom Printer
 
-While `tpl-dot-ts` handles JSON and YAML serialization automatically based on file extensions, you might need a custom format. You can achieve this by having your `defineFile` function return a pre-formatted string.
+While `tpl-dot-ts` handles JSON and YAML serialization automatically based on file extensions, you can customize the printers used by a subtree by providing a `PrinterContext`.
 
-> **Note:** This is the current recommended approach for custom formats. A more integrated, configurable printer system is planned for a future release.
+To use a custom printer, create a `PrinterContext` and add it to the template:
 
-Here is an example of a simple `.ini` file printer.
-
-**`printers.ts`**
 ```typescript
+import { defineFile, PrinterContext } from 'tpl-dot-ts'
+
 export function toIni(data: Record<string, string>): string {
   return Object.entries(data)
     .map(([key, value]) => `${key}=${value}`)
     .join('\n')
 }
-```
 
-**`template.tpl.ts`**
-```typescript
-import { defineFile } from 'tpl-dot-ts'
-import { toIni } from './printers.ts'
+const printerContext = PrinterContext.appendedBy(
+  {
+    name: 'ini',
+    print: (fileName: string, data: any) => {
+      if (fileName.endsWith('.ini') && typeof data === 'object') {
+        return toIni(data)
+      }
+      return null
+    }
+  }
+)
 
 export default defineFile(() => {
   const dbConfig = {
     host: 'localhost',
     port: '5432',
   }
-  return toIni(dbConfig)
-})
+  return dbConfig
+}).withContext(printerContext)
 // If this file is named 'config.ini', the output will be:
 // host=localhost
 // port=5432
 ```
+
+Off course, if only one file is concerned, you can just return a string directly from your file template.
 
 ## License
 
