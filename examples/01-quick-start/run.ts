@@ -3,9 +3,8 @@
 // ⬆️ The line above is a shebang. It tells the system to execute this
 // file using 'tsx', a tool that can run TypeScript files directly.
 
-import { Tpl, defineDir } from 'tpl-dot-ts'
+import { Tpl, defineDir, PrinterContext } from 'tpl-dot-ts'
 import { Config } from './config.ts'
-import { PrinterContext } from 'src/printers/PrinterContext.ts'
 
 async function main() {
 	// 1. Load the entire 'templates' directory.

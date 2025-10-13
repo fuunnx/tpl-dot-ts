@@ -24,7 +24,16 @@ export async function runWithContexts<R>(
 const EMPTY = Symbol('empty')
 type EMPTY = typeof EMPTY
 
-export function createContext<T>(name: string, getDefaultValue?: () => T) {
+export type ContextClass<T> = {
+	new (value: T): ProvidedContext<T>
+	getContextValue(): T
+	getDefaultValue(): T
+}
+
+export function createContext<T>(
+	name: string,
+	getDefaultValue?: () => T,
+): ContextClass<T> {
 	const storage = new AsyncLocalStorage<T | EMPTY>()
 	storage.enterWith(EMPTY)
 
@@ -35,10 +44,6 @@ export function createContext<T>(name: string, getDefaultValue?: () => T) {
 		readonly value: T
 		constructor(value: T) {
 			this.value = value
-		}
-
-		static createInstance = (value: T) => {
-			return new Context(value)
 		}
 
 		static getContextValue = () => {
