@@ -12,14 +12,13 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set node
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
+      - name: CI Steps
+        uses: ./.github/actions/ci-steps
 
       - name: Generate changelog
         run: cd lib && npx changelogithub

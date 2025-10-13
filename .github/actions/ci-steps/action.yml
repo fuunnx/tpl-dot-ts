@@ -1,0 +1,29 @@
+name: 'CI Steps'
+description: 'Sets up Node.js and pnpm, installs dependencies, builds, and tests.'
+runs:
+  using: "composite"
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4.1.0
+
+    - name: Set node LTS
+      uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+        cache: pnpm
+
+    - name: Install
+      run: pnpm install
+      shell: bash
+
+    - name: Build
+      run: cd lib && pnpm run build
+      shell: bash
+
+    - name: Typecheck
+      run: cd lib && pnpm run typecheck
+      shell: bash
+
+    - name: Test
+      run: cd lib && pnpm run test
+      shell: bash

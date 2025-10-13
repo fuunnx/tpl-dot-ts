@@ -2,9 +2,13 @@ name: Unit Test
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+    tags-ignore:
+      - 'v*'
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   test:
@@ -13,26 +17,5 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4.1.0
-
-      - name: Set node LTS
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: pnpm
- 
-      - name: Install
-        run: pnpm install
-
-      - name: Build
-        run: cd lib && pnpm run build
-
-      # - name: Lint
-      #   run: cd lib && pnpm run lint
-
-      - name: Typecheck
-        run: cd lib && pnpm run typecheck
-
-      - name: Test
-        run: cd lib && pnpm run test
+      - name: CI Steps
+        uses: ./.github/actions/ci-steps
