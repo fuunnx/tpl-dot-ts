@@ -1,7 +1,7 @@
 import {
 	defineDockerCompose,
 	defineDockerComposeService,
-} from 'utils/docker.ts'
+} from '../utils/docker.ts'
 import { args, Config } from '../config.ts'
 import flattenObject from '@stdlib/utils-flatten-object'
 

@@ -1,6 +1,6 @@
 import type { Compose } from 'compose-spec-schema'
 import type { DefinitionsService } from 'compose-spec-schema/lib/type.js'
-import { Config } from 'config.ts'
+import { Config } from '../config.ts'
 
 type NxCompose = Omit<Compose, 'services'> & {
 	services?: Record<string, NxDefinitionsService | Record<string, never>>

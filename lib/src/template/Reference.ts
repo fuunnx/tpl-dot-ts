@@ -5,7 +5,7 @@ import {
 	type ITemplateReference,
 	type MaterializedReference,
 } from '../types.ts'
-import { normalizePath } from '../lib/normalizePath.ts'
+import { normalizePath, resolvePathRelativeToMeta } from '../lib/normalizePath.ts'
 import { writeReference } from './write.ts'
 import { stateSym, kindSym } from '../internal.ts'
 
@@ -42,7 +42,7 @@ export class TemplateReference implements ITemplateReference {
 		}
 	}
 
-	async write(output: string) {
-		return writeReference(await this.materialize(), output)
+	async write(importMeta: ImportMeta, output: string) {
+		return writeReference(await this.materialize(), resolvePathRelativeToMeta(importMeta, output))
 	}
 }

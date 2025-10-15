@@ -1,6 +1,6 @@
 import { createContext } from 'tpl-dot-ts'
 import { parseArgs } from 'node:util'
-import { select } from 'utils/select.ts'
+import { select } from './utils/select.ts'
 
 const parsedArgs = parseArgs({
 	options: {

@@ -46,12 +46,12 @@ function isMaterialized(value: unknown): value is Materialized {
 }
 
 export async function materialize<T extends Template>(
-	inflatable: T,
+	template: T,
 	outputFileName: string,
 ): Promise<Materialize<T>> {
-	return runWithContexts(inflatable.contexts ?? [], async () => {
-		if (inflatable[kindSym] === Taxonomy.KindEnum.file) {
-			let content = await inflatable.content()
+	return runWithContexts(template.contexts ?? [], async () => {
+		if (template[kindSym] === Taxonomy.KindEnum.file) {
+			let content = await template.content()
 
 			if (isTemplate(content)) {
 				return (await materialize(content, outputFileName)) as Materialize<T>
@@ -67,17 +67,17 @@ export async function materialize<T extends Template>(
 			} satisfies MaterializedFile as Materialize<T>
 		}
 
-		if (inflatable[kindSym] === Taxonomy.KindEnum.reference) {
+		if (template[kindSym] === Taxonomy.KindEnum.reference) {
 			return {
 				[stateSym]: Taxonomy.StateEnum.materialized,
 				[kindSym]: Taxonomy.KindEnum.reference,
-				path: await inflatable.content(),
+				path: await template.content(),
 			} satisfies MaterializedReference as Materialize<T>
 		}
 
-		if (inflatable[kindSym] === Taxonomy.KindEnum.dir) {
+		if (template[kindSym] === Taxonomy.KindEnum.dir) {
 			const content: MaterializedDir['content'] = await mapValuesAsync(
-				await inflatable.content(),
+				await template.content(),
 				(value, key) => {
 					return materialize(value, key)
 				},
@@ -90,6 +90,6 @@ export async function materialize<T extends Template>(
 			} satisfies MaterializedDir as Materialize<T>
 		}
 
-		throw new Error(`Unknown kind ${inflatable[kindSym]}`)
+		throw new Error(`Unknown kind ${template[kindSym]}`)
 	})
 }

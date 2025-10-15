@@ -7,7 +7,7 @@ import { TemplateFile } from './template/File.ts'
 import { fromPath } from './template/fromPath.ts'
 
 export const Tpl = {
-	async from(
+	async fromPath(
 		importMeta: { url: string },
 		pathName: string,
 	): Promise<TemplateFile | TemplateReference | TemplateDir> {

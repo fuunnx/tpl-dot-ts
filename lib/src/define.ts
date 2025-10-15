@@ -1,30 +1,24 @@
 import { TemplateDir } from './template/Dir.ts'
+import { TemplateFile } from './template/File.ts'
 import {
 	type TemplateDirContent,
-	type ITemplateFile,
-	Taxonomy,
 } from './types.ts'
-import { stateSym, kindSym } from './internal.ts'
+
+
+type Getter<T> = () => T | Promise<T>
 
 export function defineDir<T extends TemplateDirContent>(
-	entries: T,
+	entries: T | Getter<T>,
 ): TemplateDir<T> {
-	return TemplateDir.fromEntries(entries)
+	return new TemplateDir<T>(typeof entries === 'function' ? entries : () => entries)
 }
 
 export function defineFile<T extends unknown>(
-	content: T | (() => T),
-): ITemplateFile {
-	return {
-		[stateSym]: Taxonomy.StateEnum.template,
-		[kindSym]: Taxonomy.KindEnum.file,
-		content() {
-			if (typeof content === 'function') {
-				// @ts-expect-error content may be a function expecting args
-				return content()
-			} else {
-				return content
-			}
-		},
-	}
+	content: T extends Function ? Getter<T> : T | Getter<T>,
+): TemplateFile<T> {
+	return new TemplateFile<T>(
+    // @ts-expect-error the type is correct
+    typeof content === 'function' ? content : () => content
+  )
 }
+

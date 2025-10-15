@@ -1,5 +1,7 @@
 # tpl-dot-ts
 
+> [!Warning] This project is a work in progress. The API is mostly stable but expect some minor breaking changes until v1.
+
 [![npm version](https://badge.fury.io/js/tpl-dot-ts.svg)](https://badge.fury.io/js/tpl-dot-ts)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -96,7 +98,7 @@ import { Tpl, defineDir } from 'tpl-dot-ts'
 import { Config } from './config.ts'
 
 async function main() {
-  const template = await Tpl.from(import.meta, './templates')
+  const template = await Tpl.fromPath(import.meta, './templates')
 
   const output = defineDir({
     english: template.withContext(Config.init({ name: 'World' })),
@@ -131,7 +133,7 @@ generated/
 
 ## API Reference
 
-### `Tpl.from(importMeta, path)`
+### `Tpl.fromPath(importMeta, path)`
 
 Loads a template from the file system.
 
