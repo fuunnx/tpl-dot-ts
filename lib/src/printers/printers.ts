@@ -64,14 +64,3 @@ export function fallbackPrinter(): Printer {
 	}
 }
 
-// TODO
-// export function prettierPrinter(): Printer {
-
-//   return {
-//     name: 'prettier',
-//     print: (_fileName: string, data: unknown) => {
-//       if (typeof data === 'string') return prettier(data)
-//       return null
-//     }
-//   }
-// }

@@ -63,13 +63,13 @@ export interface ITemplateDir<
 	withContext?: (...contexts: ProvidedContext[]) => ITemplateDir
 }
 
-export interface ITemplateFile {
+export interface ITemplateFile<T = unknown> {
 	readonly [stateSym]: Taxonomy.StateEnum.template
 	readonly [kindSym]: Taxonomy.KindEnum.file
 	readonly contexts?: ProvidedContext[]
 
-	content: () => unknown | Promise<unknown>
-	withContext?: (...contexts: ProvidedContext[]) => ITemplateFile
+	content: () => T | Promise<T>
+	withContext?: (...contexts: ProvidedContext[]) => ITemplateFile<T>
 }
 
 export interface ITemplateReference {

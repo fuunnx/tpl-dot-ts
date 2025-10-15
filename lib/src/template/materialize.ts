@@ -14,10 +14,10 @@ import { mapValuesAsync } from '../lib/mapValuesAsync.ts'
 import { runWithContexts } from '../context.ts'
 import { PrinterContext } from '../printers/PrinterContext.ts'
 
-function print(outputFileName: string, content: unknown) {
+async function print(outputFileName: string, content: unknown) {
 	const fileName = path.basename(outputFileName)
 	const printer = combinePrinters(PrinterContext.getContextValue())
-	const printedValue = printer.print(fileName, content)
+	const printedValue = await printer.print(fileName, content)
 
 	if (printedValue === null) {
 		throw new Error(
@@ -63,7 +63,7 @@ export async function materialize<T extends Template>(
 			return {
 				[stateSym]: Taxonomy.StateEnum.materialized,
 				[kindSym]: Taxonomy.KindEnum.file,
-				content: print(outputFileName, content),
+				content: await print(outputFileName, content),
 			} satisfies MaterializedFile as Materialize<T>
 		}
 
