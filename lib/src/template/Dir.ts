@@ -10,7 +10,7 @@ import {
 import { mapValuesAsync } from '../lib/mapValuesAsync.ts'
 import { writeDir } from './write.ts'
 import { materialize } from './materialize.ts'
-import { normalizePath, resolvePathRelativeToMeta } from '../lib/normalizePath.ts'
+import { normalizePath } from '../lib/normalizePath.ts'
 import { fromPath } from './fromPath.ts'
 import { kindSym, stateSym } from '../internal.ts'
 import { readdir } from 'node:fs/promises'
@@ -37,7 +37,7 @@ export class TemplateDir<
 		return new TemplateDir(() => entries)
 	}
 
-	static async fromPath(pathName: string) {
+	static fromPath(pathName: string) {
 		pathName = normalizePath(pathName)
 
 		return new TemplateDir(async () => {
@@ -81,7 +81,7 @@ export class TemplateDir<
 		return materialize(this, '')
 	}
 
-	async write(importMeta: ImportMeta, outputDir: string) {
-		return writeDir(await this.materialize(), resolvePathRelativeToMeta(importMeta, outputDir))
+	async write(outputDir: string, relativeTo?: string) {
+		return writeDir(await this.materialize(), relativeTo ? path.join(relativeTo, outputDir) : outputDir)
 	}
 }

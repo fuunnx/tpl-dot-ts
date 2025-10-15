@@ -4,17 +4,17 @@ import { TemplateDir } from './Dir.ts'
 import { TemplateReference } from './Reference.ts'
 import { TemplateFile } from './File.ts'
 
-export async function fromPath(pathName: string) {
+export function fromPath<T extends TemplateFile | TemplateDir | TemplateReference>(pathName: string): T {
 	if (isTplFile(pathName)) {
-		return TemplateFile.fromPath(pathName)
+		return TemplateFile.fromPath(pathName) as T
 	}
 
-	const stat = await fs.promises.stat(pathName)
+	const stat = fs.statSync(pathName)
 	const isDir = stat.isDirectory()
 
 	if (isDir) {
-		return TemplateDir.fromPath(pathName)
+		return TemplateDir.fromPath(pathName) as T
 	}
 
-	return TemplateReference.fromPath(pathName)
+	return TemplateReference.fromPath(pathName) as T
 }

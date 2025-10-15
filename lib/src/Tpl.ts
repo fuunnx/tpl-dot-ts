@@ -2,16 +2,15 @@ import path from 'node:path'
 
 import { TemplateDir } from './template/Dir.ts'
 import { TemplateReference } from './template/Reference.ts'
-import { normalizePath } from './lib/normalizePath.ts'
 import { TemplateFile } from './template/File.ts'
 import { fromPath } from './template/fromPath.ts'
 
 export const Tpl = {
-	async fromPath(
-		importMeta: { url: string },
+	fromPath<T extends TemplateFile | TemplateDir | TemplateReference>(
 		pathName: string,
-	): Promise<TemplateFile | TemplateReference | TemplateDir> {
-		pathName = path.join(path.dirname(normalizePath(importMeta.url)), pathName)
+    relativeTo?: string
+	): T {
+		pathName = relativeTo ? path.join(relativeTo, pathName) : pathName
 		return fromPath(pathName)
 	},
 }

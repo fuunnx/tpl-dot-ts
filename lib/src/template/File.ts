@@ -9,7 +9,7 @@ import { normalizePath } from '../lib/normalizePath.ts'
 import { writeFile } from './write.ts'
 import { materialize } from './materialize.ts'
 import { stateSym, kindSym } from '../internal.ts'
-import { resolvePathRelativeToMeta } from '../lib/normalizePath'
+import path from 'node:path'
 
 export class TemplateFile<T = unknown> implements ITemplateFile<T> {
 	readonly [stateSym] = Taxonomy.StateEnum.template
@@ -23,16 +23,18 @@ export class TemplateFile<T = unknown> implements ITemplateFile<T> {
     this.#hoistedContent = content
 	}
 
-	static async fromPath(pathName: string) {
+	static fromPath(pathName: string) {
 		pathName = normalizePath(pathName)
-		// check if exists
-		await fs.promises.stat(pathName)
-    const { default: result } = await import(pathName)
-    if(typeof result === 'function') {
-      return new TemplateFile(result)
-    } else {
-      return new TemplateFile(() => result)
-    }
+    return new TemplateFile(async () => {
+      // check if exists
+      await fs.promises.stat(pathName)
+      const { default: result } = await import(pathName)
+      if(typeof result === 'function') {
+        return result()
+      } else {
+        return result
+      }
+    })
 	}
 
 	withContext(...contexts: ProvidedContext[]) {
@@ -47,7 +49,7 @@ export class TemplateFile<T = unknown> implements ITemplateFile<T> {
 		return materialize(this, outputFileName)
 	}
 
-	async write(importMeta: ImportMeta, outputFileName: string) {
-		return writeFile(await this.materialize(outputFileName), resolvePathRelativeToMeta(importMeta, outputFileName))
+	async write(outputFileName: string, relativeTo?: string) {
+		return writeFile(await this.materialize(outputFileName), relativeTo ? path.join(relativeTo, outputFileName) : outputFileName)
 	}
 }

@@ -8,7 +8,7 @@ import { Config } from './config.ts'
 
 async function main() {
 	// 1. Load the entire 'templates' directory.
-	const template = await Tpl.fromPath(import.meta, './templates')
+	const template = await Tpl.fromPath( './templates', import.meta.dirname)
 
 	// 2. Define the output structure, applying a different context for each language.
 	const output = defineDir({
@@ -30,7 +30,7 @@ async function main() {
 	})
 
 	// 3. Write the result to the 'generated' directory.
-	await output.write(import.meta, './generated')
+	await output.write('./generated', import.meta.dirname)
 
 	console.log('Done! Check the "generated" directory.')
 }

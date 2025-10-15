@@ -1,10 +1,10 @@
 import { Config } from '../config.ts'
-import { Tpl } from 'tpl-dot-ts'
+import { TemplateDir, Tpl } from 'tpl-dot-ts'
 
-export default async function Default() {
+export default function Default() {
 	const config = Config.getContextValue()
 
-	return (await Tpl.fromPath(import.meta, './(ignoredFolder)')).withContext(
+	return Tpl.fromPath<TemplateDir>( './(ignoredFolder)', import.meta.dirname).withContext(
 		new Config({
 			...config,
 			// @ts-expect-error overriden context for example

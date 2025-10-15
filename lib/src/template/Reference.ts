@@ -5,9 +5,10 @@ import {
 	type ITemplateReference,
 	type MaterializedReference,
 } from '../types.ts'
-import { normalizePath, resolvePathRelativeToMeta } from '../lib/normalizePath.ts'
+import { normalizePath } from '../lib/normalizePath.ts'
 import { writeReference } from './write.ts'
 import { stateSym, kindSym } from '../internal.ts'
+import path from 'node:path'
 
 export class TemplateReference implements ITemplateReference {
 	readonly [stateSym] = Taxonomy.StateEnum.template
@@ -19,10 +20,10 @@ export class TemplateReference implements ITemplateReference {
 		this.#pathName = pathName
 	}
 
-	static async fromPath(pathName: string) {
+	static fromPath(pathName: string) {
 		pathName = normalizePath(pathName)
 		// check if exists
-		await fs.promises.stat(pathName)
+		fs.statSync(pathName)
 		return new this(pathName)
 	}
 
@@ -42,7 +43,7 @@ export class TemplateReference implements ITemplateReference {
 		}
 	}
 
-	async write(importMeta: ImportMeta, output: string) {
-		return writeReference(await this.materialize(), resolvePathRelativeToMeta(importMeta, output))
+	async write(outputFileName: string, relativeTo?: string) {
+		return writeReference(await this.materialize(), relativeTo ? path.join(relativeTo, outputFileName) : outputFileName)
 	}
 }
