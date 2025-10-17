@@ -248,11 +248,11 @@ export function toIni(data: Record<string, string>): string {
 const printerContext = PrinterContext.appendedBy(
   {
     name: 'ini',
-    print: (fileName: string, data: any) => {
+    print: (fileName: string, data: unknown, next: (data: unknown) => Promise<unknown>) => {
       if (fileName.endsWith('.ini') && typeof data === 'object') {
-        return toIni(data)
+        return next(toIni(data))
       }
-      return null
+      return next(data)
     }
   }
 )

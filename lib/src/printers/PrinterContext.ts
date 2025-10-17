@@ -1,8 +1,8 @@
 import { createContext } from '../context.ts'
-import { fallbackPrinter, jsonPrinter, yamlPrinter } from './printers.ts'
+import { jsonPrinter, yamlPrinter } from './printers.ts'
 import type { Printer } from './types.ts'
 
-const defaultPrinters = [yamlPrinter(), jsonPrinter(), fallbackPrinter()]
+const defaultPrinters = [yamlPrinter(), jsonPrinter()]
 
 export class PrinterContext extends createContext<Printer[]>(
 	'printer',

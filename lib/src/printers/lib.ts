@@ -4,16 +4,16 @@ export function combinePrinters(printers: Printer[], name?: string): Printer {
 		name:
 			name ??
 			`combinePrinters(${printers.map((printer) => printer.name ?? '<anonymous>').join(', ')})`,
-		async print(fileName: string, data: unknown) {
-			let result: string | null = null
+		async print(fileName, data, next) {
+      const stack = [...printers]
+      async function onNext(result: unknown) {
+        const printer = stack.shift()
+        if (!printer) return result
+        return printer.print(fileName, result, onNext)
+      }
 
-			for (const printer of printers) {
-				if (result === null) {
-					result = await printer.print(fileName, data)
-				}
-			}
-
-			return result
+			const result = await onNext(data)
+			return next(result)
 		},
 	}
 }

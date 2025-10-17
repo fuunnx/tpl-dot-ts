@@ -17,15 +17,19 @@ import { PrinterContext } from '../printers/PrinterContext.ts'
 async function print(outputFileName: string, content: unknown) {
 	const fileName = path.basename(outputFileName)
 	const printer = combinePrinters(PrinterContext.getContextValue())
-	const printedValue = await printer.print(fileName, content)
+	const printedValue = await printer.print(fileName, content, (value) => Promise.resolve(value))
+
+  if(typeof printedValue === 'string') {
+    return printedValue
+  }
 
 	if (printedValue === null) {
-		throw new Error(
-			`No printer found for ${JSON.stringify(outputFileName)} and value of type "${typeof content}". Printer used: ${printer.name}`,
-		)
-	}
+    return null
+  }
 
-	return printedValue
+  throw new Error(
+    `Invalid result type ${typeof printedValue} found for ${JSON.stringify(outputFileName)} and value of type "${typeof content}". Printer used: ${printer.name}. Valid types are: string | null`,
+  )
 }
 
 function isTemplate(value: unknown): value is Template {
@@ -60,10 +64,11 @@ export async function materialize<T extends Template>(
 				return content as Materialize<T>
 			}
 
+      const materializedContent = await print(outputFileName, content)
 			return {
 				[stateSym]: Taxonomy.StateEnum.materialized,
 				[kindSym]: Taxonomy.KindEnum.file,
-				content: await print(outputFileName, content),
+				content: materializedContent,
 			} satisfies MaterializedFile as Materialize<T>
 		}
 
