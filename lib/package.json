@@ -1,6 +1,6 @@
 {
   "name": "tpl-dot-ts",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "An utility belt to generate files from typeScript templates",
   "type": "module",
   "license": "MIT",
