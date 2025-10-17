@@ -9,7 +9,7 @@ export function combinePrinters(printers: Printer[], name?: string): Printer {
       async function onNext(result: unknown) {
         const printer = stack.shift()
         if (!printer) return result
-        return printer.print(fileName, result, onNext)
+        return printer.print(fileName, await result, onNext)
       }
 
 			const result = await onNext(data)
