@@ -1,6 +1,6 @@
 export * from './Tpl.ts'
 export * from './define.ts'
-export { createContext, type ProvidedContext } from './context.ts'
+export * from './context.ts'
 export * from './types.ts'
 export * from './printers/PrinterContext.ts'
 export * from './printers/types.ts'
