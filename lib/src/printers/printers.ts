@@ -17,26 +17,26 @@ export namespace TplTs {
 		// }
 	}
 
-	export type Printable = TplTs.Printers[keyof TplTs.Printers]['data']
 }
+
+export type Printable = TplTs.Printers[keyof TplTs.Printers]['data']
 
 export function yamlPrinter(): Printer {
 	return {
 		name: 'yaml',
-		print: (fileName, data, next) => {
+		print: async (fileName, getData) => {
+      const data = await getData()
 			if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) {
-				if (typeof data === 'string') return next(data)
+				if (typeof data === 'string') return data
 				if (typeof data === 'object') {
-          return next(
-						yaml
-							.stringify(data)
-							// replace all `key: {}` with `key:`
-							.replaceAll(/(.*:) \{\}/gi, '$1')
-					)
+          return 	yaml
+            .stringify(data)
+            // replace all `key: {}` with `key:`
+            .replaceAll(/(.*:) \{\}/gi, '$1')
         }
 			}
 
-			return next(data)
+			return data
 		},
 	}
 }
@@ -44,13 +44,14 @@ export function yamlPrinter(): Printer {
 export function jsonPrinter(): Printer {
 	return {
 		name: 'json',
-		print: (fileName, data, next) => {
+		print: async (fileName,  getData) => {
+      const data = await getData()
 			if (fileName.endsWith('.json')) {
-				if (typeof data === 'string') return next(data)
-				if (typeof data === 'object') return next(JSON.stringify(data, null, 2))
+				if (typeof data === 'string') return data
+				if (typeof data === 'object') return JSON.stringify(data, null, 2)
 			}
 
-			return next(data)
+			return data
 		},
 	}
 }

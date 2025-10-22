@@ -37,19 +37,19 @@ export class TemplateFile<T = unknown> implements ITemplateFile<T> {
     })
 	}
 
-	withContext(...contexts: ProvidedContext[]) {
+	withContext = (...contexts: ProvidedContext[]) => {
 		return new TemplateFile(this.#hoistedContent, [...this.contexts, ...contexts])
 	}
 
-	async content() {
+	content = () => {
 		return runWithContexts(this.contexts, async () => await this.#hoistedContent())
 	}
 
-	async materialize(outputFileName: string): Promise<MaterializedFile> {
+	materialize = (outputFileName: string): Promise<MaterializedFile> => {
 		return materialize(this, outputFileName)
 	}
 
-	async write(outputFileName: string, relativeTo?: string) {
+	write = async(outputFileName: string, relativeTo?: string) => {
 		return writeFile(await this.materialize(outputFileName), relativeTo ? path.join(relativeTo, outputFileName) : outputFileName)
 	}
 }
