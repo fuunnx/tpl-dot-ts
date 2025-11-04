@@ -1,5 +1,6 @@
 import yaml from 'yaml'
 import type { Printer } from './types.ts'
+import { isPlainObject } from 'src/lib/predicates.ts'
 
 export namespace TplTs {
 	export interface Printers {
@@ -16,7 +17,6 @@ export namespace TplTs {
 		//   'data': string | Record<string, unknown>
 		// }
 	}
-
 }
 
 export type Printable = TplTs.Printers[keyof TplTs.Printers]['data']
@@ -25,18 +25,21 @@ export function yamlPrinter(): Printer {
 	return {
 		name: 'yaml',
 		print: async (fileName, getData) => {
-      const data = await getData()
 			if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) {
+				const data = await getData(
+					(x) => typeof x === 'string' || isPlainObject(x) || Array.isArray(x),
+				)
+
 				if (typeof data === 'string') return data
-				if (typeof data === 'object') {
-          return 	yaml
-            .stringify(data)
-            // replace all `key: {}` with `key:`
-            .replaceAll(/(.*:) \{\}/gi, '$1')
-        }
+				return (
+					yaml
+						.stringify(data)
+						// replace all `key: {}` with `key:`
+						.replaceAll(/(.*:) \{\}/gi, '$1')
+				)
 			}
 
-			return data
+			return getData()
 		},
 	}
 }
@@ -44,16 +47,16 @@ export function yamlPrinter(): Printer {
 export function jsonPrinter(): Printer {
 	return {
 		name: 'json',
-		print: async (fileName,  getData) => {
-      const data = await getData()
+		print: async (fileName, getData) => {
 			if (fileName.endsWith('.json')) {
+				const data = await getData(
+					(x) => typeof x === 'string' || isPlainObject(x) || Array.isArray(x),
+				)
 				if (typeof data === 'string') return data
-				if (typeof data === 'object') return JSON.stringify(data, null, 2)
+				return JSON.stringify(data, null, 2)
 			}
 
-			return data
+			return getData()
 		},
 	}
 }
-
-

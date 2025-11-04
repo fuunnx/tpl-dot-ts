@@ -8,29 +8,25 @@ import { Config } from './config.ts'
 
 async function main() {
 	// 1. Load the entire 'templates' directory.
-	const template = await Tpl.fromPath( './templates', import.meta.dirname)
+	const template = await Tpl.fromPath('./templates', import.meta.dirname)
 
-  // (optional) Create your own printers
-  const upperCaseFrenchPrinter: Printer = {
-    name: 'uppercase french',
+	// (optional) Create your own printers
+	const upperCaseFrenchPrinter: Printer = {
+		name: 'uppercase french',
 
-    async print(fileName, getData) {
-      const data = await getData()
-      if (fileName === 'greeting' && typeof data === 'string') {
-        return data
-          .toLocaleUpperCase('fr-FR')
-          .replace('HELLO', 'sAlUt')
-      }
+		async print(fileName, getData) {
+			if (fileName === 'greeting') {
+				const data = await getData((x) => typeof x === 'string')
+				return data.toLocaleUpperCase('fr-FR').replace('HELLO', 'sAlUt')
+			}
 
-      return data
-    },
-  }
+			return getData()
+		},
+	}
 
 	// 2. Define the output structure, applying a different context for each language.
 	const output = defineDir({
-		english: template.withContext(
-      new Config({ name: 'World' }),
-    ),
+		english: template.withContext(new Config({ name: 'World' })),
 		french: template.withContext(
 			new Config({ name: 'Monde' }),
 			PrinterContext.prependedBy(upperCaseFrenchPrinter),

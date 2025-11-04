@@ -1,38 +1,52 @@
 import type { Materialized, Template } from 'src/types.ts'
-import type { Printer } from './types.ts'
-import { isMaterialized, isTemplate } from 'src/template/materialize.ts'
 
-export function combinePrinters(printers: Printer[], name?: string): Printer {
+import type { Accept, GetData, Printer } from './types.ts'
+import { isMaterialized, isTemplate } from 'src/template/materialize.ts'
+import { controlFlow } from './controlFlow.ts'
+
+export function combinePrinters(printers: Printer[], name?: string) {
 	return {
 		name:
 			name ??
 			`combinePrinters(${printers.map((printer) => printer.name ?? '<anonymous>').join(', ')})`,
-		async print(fileName, getData): Promise<unknown> {
-      if(!printers.length) return getData()
+		async print(
+			fileName: string,
+			getData: () => Promise<unknown>,
+		): Promise<unknown> {
+			let print = getData
 
-      const [first, ...others] = printers
+			for (const printer of printers) {
+				let previousPrint = print
+				print = async () => {
+					try {
+						const getData: GetData = async function <T>(accept?: Accept<T>) {
+							const result = await previousPrint()
+							if (isPassThrough(result)) throw controlFlow.break(result)
+							if (accept == null) return result
+							if (!accept(result)) throw controlFlow.continue(result)
+							return result
+						}
+						const res = await printer.print(fileName, getData)
+						if (res === getData) return await previousPrint()
+						return res
+					} catch (error) {
+						if (controlFlow.isBreak(error)) throw error
+						if (controlFlow.isContinue(error)) return error
+						throw error
+					}
+				}
+			}
 
-      let print = async () => await first!.print(fileName, async () => {
-        const result = await getData()
-        if(isPassThrough(result)) throw result // prevent further computation
-        return result
-      })
-
-      for (const printer of others) {
-        let previousPrint = print
-        print = async () => await printer.print(fileName, previousPrint)
-      }
-
-      try {
-        return await print()
-      } catch(error) {
-        if(isPassThrough(error)) return error
-        throw error
-      }
+			try {
+				return await print()
+			} catch (error) {
+				if (controlFlow.isBreak(error)) return error
+				throw error
+			}
 		},
 	}
 }
 
 function isPassThrough(value: unknown): value is Template | Materialized {
-  return isTemplate(value) || isMaterialized(value)
+	return isTemplate(value) || isMaterialized(value)
 }

@@ -248,15 +248,14 @@ export function toIni(data: Record<string, string>): string {
 const printerContext = PrinterContext.appendedBy(
   {
     name: 'ini',
-    async print(fileName: string, getData: () => Promise<unknown>) {
-      const data = await getData()
-
-      if (fileName.endsWith('.ini') && typeof data === 'object') {
+    async print(fileName, getData) {
+      if (fileName.endsWith('.ini')) {
+        const data = await getData(x => typeof x === 'object')
         return toIni(data)
       }
 
       // don't forget to return the original data if the printer is not applicable, so other printers can be used
-      return data
+      return getData()
     }
   }
 )
@@ -268,12 +267,84 @@ export default defineFile(() => {
   }
   return dbConfig
 }).withContext(printerContext)
+.write('config.ini')
 // If this file is named 'config.ini', the output will be:
 // host=localhost
 // port=5432
 ```
 
 Off course, if only one file is concerned, you can just return a string directly from your file template.
+
+
+### Creating an advanced Custom Printer with Metadata
+
+You may have noticed that the printer accepts a `getData` function. This function is a generator. It accepts a predicate and returns the data that matches the predicate. If the predicate is not provided, it returns the entire data.
+
+Why so complicated you may ask ? So you can decorate the function call.
+
+```typescript
+#!/usr/bin/env -S npx tsx
+
+import {
+	createContext,
+	defineFile,
+	PrinterContext,
+	runWithContexts,
+	isPlainObject,
+	defineDir,
+} from 'tpl-dot-ts'
+
+const HostsRegistryContext = createContext<Set<string>>('hosts registry')
+
+export function toIni(data: Record<string, unknown>): string {
+	return Object.entries(data)
+		.map(([key, value]) => `${key}=${value}`)
+		.join('\n')
+}
+
+const printerContext = PrinterContext.appendedBy({
+	name: 'context',
+	async print(fileName, getData) {
+		const registry = new Set<string>()
+		const data = await runWithContexts(
+			[new HostsRegistryContext(registry)],
+			() => getData(isPlainObject),
+		)
+
+		return `
+# Hosts listed in this file: ${Array.from(registry.values()).join(', ')}
+${toIni(data)}
+`
+	},
+})
+
+defineDir(() => {
+	return {
+		'./config.ini': defineFile(() => {
+			const dbConfig = {
+				host: 'localhost',
+				port: '5432',
+			}
+
+			// append metadata
+			HostsRegistryContext.getContextValue().add(dbConfig.host)
+
+			return dbConfig
+		}),
+	}
+})
+	.withContext(printerContext)
+	.write('./generated', import.meta.dirname)
+
+// The file output will be:
+//
+// # Hosts listed in this file: localhost
+// host=localhost
+// port=5432
+//
+
+```
+
 
 ## License
 

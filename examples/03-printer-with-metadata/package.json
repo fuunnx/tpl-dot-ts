@@ -1,0 +1,10 @@
+{
+  "name": "tpl-dot-ts-example-printer-with-metadata",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "tpl-dot-ts": "workspace:^",
+    "tsx": "^4.20.6"
+  }
+}

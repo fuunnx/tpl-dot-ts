@@ -13,21 +13,37 @@ import { stateSym, kindSym } from '../internal.ts'
 import { mapValuesAsync } from '../lib/mapValuesAsync.ts'
 import { runWithContexts } from '../context.ts'
 import { PrinterContext } from '../printers/PrinterContext.ts'
+import { controlFlow } from '../printers/controlFlow.ts'
 
-async function print(outputFileName: string, getContent: () => unknown): Promise<string | null | Materialized | Template>  {
+async function print(
+	outputFileName: string,
+	getContent: () => unknown,
+): Promise<string | null | Materialized | Template> {
 	const fileName = path.basename(outputFileName)
 	const printer = combinePrinters(PrinterContext.getContextValue())
-	const printedValue = await printer.print(fileName, async () => await getContent())
 
-  if(typeof printedValue === 'string') return printedValue
+	let firstContent
+	let printedValue = await printer.print(fileName, async () => {
+		firstContent = await getContent()
+		return firstContent
+	})
+	if (controlFlow.isBreak(printedValue)) printedValue = printedValue.value
+
+	if (typeof printedValue === 'string') return printedValue
 	if (printedValue === null) return null
 
-  if (isTemplate(printedValue)) return printedValue
-  if (isMaterialized(printedValue)) return printedValue
+	if (isTemplate(printedValue)) return printedValue
+	if (isMaterialized(printedValue)) return printedValue
 
-  throw new Error(
-    `Invalid result type ${typeof printedValue} found for ${JSON.stringify(outputFileName)} and value of type "${typeof getContent}". Printer used: ${printer.name}. Valid types are: string | null`,
-  )
+	throw new Error(
+		`Invalid result type ${printItemType(printedValue)} found for ${JSON.stringify(outputFileName)} and value of type "${printItemType(firstContent)}". Printer used: ${printer.name}. Valid types are: string | null`,
+	)
+}
+
+function printItemType(item: unknown) {
+	if (item === null) return 'null'
+	if (typeof item === 'object') return item.constructor.name
+	return typeof item
 }
 
 export function isTemplate(value: unknown): value is Template {
@@ -53,10 +69,13 @@ export async function materialize<T extends Template>(
 ): Promise<Materialize<T>> {
 	return runWithContexts(template.contexts ?? [], async () => {
 		if (template[kindSym] === Taxonomy.KindEnum.file) {
-      const materializedContent = await print(outputFileName, template.content)
+			const materializedContent = await print(outputFileName, template.content)
 
 			if (isTemplate(materializedContent)) {
-				return (await materialize(materializedContent, outputFileName)) as Materialize<T>
+				return (await materialize(
+					materializedContent,
+					outputFileName,
+				)) as Materialize<T>
 			}
 			if (isMaterialized(materializedContent)) {
 				return materializedContent as Materialize<T>
