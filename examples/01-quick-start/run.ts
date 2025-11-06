@@ -15,10 +15,21 @@ async function main() {
 		name: 'uppercase french',
 
 		async print(fileName, getData) {
-			if (fileName === 'greeting') {
+			if (fileName.endsWith('/greeting')) {
 				const data = await getData((x) => typeof x === 'string')
 				return data.toLocaleUpperCase('fr-FR').replace('HELLO', 'sAlUt')
 			}
+		},
+	}
+
+	const filePathHeader: Printer = {
+		name: 'filePathHeader',
+
+		async print(fileName, getData) {
+			const data = await getData((x) => typeof x === 'string')
+			return `#final filename is : "${fileName}"
+ 
+${data}`
 		},
 	}
 
@@ -29,7 +40,7 @@ async function main() {
 			new Config({ name: 'Monde' }),
 			PrinterContext.prependedBy(upperCaseFrenchPrinter),
 		),
-	})
+	}).withContext(PrinterContext.prependedBy(filePathHeader))
 
 	// 3. Write the result to the 'generated' directory.
 	await output.write('./generated', import.meta.dirname)

@@ -1,4 +1,3 @@
-import path from 'node:path'
 import { combinePrinters } from '../printers/lib.ts'
 import {
 	Taxonomy,
@@ -21,11 +20,10 @@ async function print(
 	outputFileName: string,
 	getContent: () => unknown,
 ): Promise<string | null | Materialized | Template> {
-	const fileName = path.basename(outputFileName)
 	const printer = combinePrinters(PrinterContext.getContextValue())
 
 	let firstContent
-	let printedValue = await printer.print(fileName, async () => {
+	let printedValue = await printer.print(outputFileName, async () => {
 		firstContent = await getContent()
 		return firstContent
 	})
@@ -106,11 +104,11 @@ export async function materialize<T extends Template>(
 					content,
 					(value, key): Promise<Materialize<U[keyof U]>> => {
 						if (isTemplate(value)) {
-							return materialize(value, key as string)
+							return materialize(value, `${outputFileName}/${String(key)}`)
 						} else {
 							return materialize(
 								defineDir(value as TemplateDirContent),
-								key as string,
+								`${outputFileName}/${String(key)}`,
 							) as Promise<Materialize<U[keyof U]>>
 						}
 					},

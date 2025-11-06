@@ -92,10 +92,8 @@ export class TemplateDir<
 	}
 
 	async write(outputDir: string, relativeTo?: string) {
-		return writeDir(
-			await this.materialize(),
-			relativeTo ? path.join(relativeTo, outputDir) : outputDir,
-		)
+		const finalName = relativeTo ? path.join(relativeTo, outputDir) : outputDir
+		return writeDir(await this.materialize(), finalName)
 	}
 }
 
