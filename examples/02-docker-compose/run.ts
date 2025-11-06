@@ -13,7 +13,7 @@ Promise.resolve().then(async () => {
 		integ: input.withContext(Config.init('integ')),
 		// preproduction: input.withContext(Config.init('preproduction')),
 		// production: input.withContext(Config.init('production')),
-	}).write( './output.gen', import.meta.dirname)
+	}).write('./output.gen', import.meta.dirname)
 
 	console.timeEnd('execution time')
 })

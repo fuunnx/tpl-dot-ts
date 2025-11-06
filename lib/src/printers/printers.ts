@@ -26,11 +26,8 @@ export function yamlPrinter(): Printer {
 		name: 'yaml',
 		print: async (fileName, getData) => {
 			if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) {
-				const data = await getData(
-					(x) => typeof x === 'string' || isPlainObject(x) || Array.isArray(x),
-				)
+				const data = await getData((x) => isPlainObject(x) || Array.isArray(x))
 
-				if (typeof data === 'string') return data
 				return (
 					yaml
 						.stringify(data)
@@ -38,8 +35,6 @@ export function yamlPrinter(): Printer {
 						.replaceAll(/(.*:) \{\}/gi, '$1')
 				)
 			}
-
-			return getData()
 		},
 	}
 }
@@ -49,14 +44,9 @@ export function jsonPrinter(): Printer {
 		name: 'json',
 		print: async (fileName, getData) => {
 			if (fileName.endsWith('.json')) {
-				const data = await getData(
-					(x) => typeof x === 'string' || isPlainObject(x) || Array.isArray(x),
-				)
-				if (typeof data === 'string') return data
+				const data = await getData((x) => isPlainObject(x) || Array.isArray(x))
 				return JSON.stringify(data, null, 2)
 			}
-
-			return getData()
 		},
 	}
 }

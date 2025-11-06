@@ -1,39 +1,36 @@
-
-
 class Break<T> extends Error {
-  readonly value: T
+	readonly value: T
 
-  constructor(value: T) {
-    super()
-    this.value = value
-  }
+	constructor(value: T) {
+		super()
+		this.value = value
+	}
 }
 
 class Continue<T> extends Error {
-  readonly value: T
+	readonly value: T
 
-  constructor(value: T) {
-    super()
-    this.value = value
-  }
+	constructor(value: T) {
+		super()
+		this.value = value
+	}
 }
 
-export function isBreak(error: unknown): error is Break<unknown> {
-  return error instanceof Break
+function isBreak(error: unknown): error is Break<unknown> {
+	return error instanceof Break
 }
-export function isContinue(error: unknown): error is Continue<unknown> {
-  return error instanceof Continue
+function isContinue(error: unknown): error is Continue<unknown> {
+	return error instanceof Continue
 }
-
 
 export const controlFlow = {
-  break<T>(value: T) {
-    throw new Break(value)
-  },
-  continue<T>(value: T) {
-    throw new Continue(value)
-  },
+	break<T>(value: T) {
+		throw new Break(value)
+	},
+	continue<T>(value: T) {
+		throw new Continue(value)
+	},
 
-  isBreak,
-  isContinue
+	isBreak,
+	isContinue,
 }

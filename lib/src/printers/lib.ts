@@ -27,7 +27,9 @@ export function combinePrinters(printers: Printer[], name?: string) {
 							return result
 						}
 						const res = await printer.print(fileName, getData)
-						if (res === getData) return await previousPrint()
+						if (res === undefined) {
+							return await previousPrint()
+						}
 						return res
 					} catch (error) {
 						if (controlFlow.isBreak(error)) throw error

@@ -253,9 +253,6 @@ const printerContext = PrinterContext.appendedBy(
         const data = await getData(x => typeof x === 'object')
         return toIni(data)
       }
-
-      // don't forget to return the original data if the printer is not applicable, so other printers can be used
-      return getData()
     }
   }
 )

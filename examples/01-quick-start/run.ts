@@ -19,8 +19,6 @@ async function main() {
 				const data = await getData((x) => typeof x === 'string')
 				return data.toLocaleUpperCase('fr-FR').replace('HELLO', 'sAlUt')
 			}
-
-			return getData()
 		},
 	}
 
