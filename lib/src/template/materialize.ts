@@ -8,12 +8,14 @@ import {
 	type MaterializedDir,
 	type MaterializedFile,
 	type MaterializedReference,
+	type TemplateDirContent,
 } from '../types.ts'
 import { stateSym, kindSym } from '../internal.ts'
 import { mapValuesAsync } from '../lib/mapValuesAsync.ts'
 import { runWithContexts } from '../context.ts'
 import { PrinterContext } from '../printers/PrinterContext.ts'
 import { controlFlow } from '../printers/controlFlow.ts'
+import { defineDir } from 'src/define.ts'
 
 async function print(
 	outputFileName: string,
@@ -97,18 +99,29 @@ export async function materialize<T extends Template>(
 		}
 
 		if (template[kindSym] === Taxonomy.KindEnum.dir) {
-			const content: MaterializedDir['content'] = await mapValuesAsync(
-				await template.content(),
-				(value, key) => {
-					return materialize(value, key)
-				},
-			)
+			async function materializeTree<U extends TemplateDirContent>(
+				content: U,
+			): Promise<Materialize<U>> {
+				return (await mapValuesAsync(
+					content,
+					(value, key): Promise<Materialize<U[keyof U]>> => {
+						if (isTemplate(value)) {
+							return materialize(value, key as string)
+						} else {
+							return materialize(
+								defineDir(value as TemplateDirContent),
+								key as string,
+							) as Promise<Materialize<U[keyof U]>>
+						}
+					},
+				)) as Materialize<U>
+			}
 
 			return {
 				[stateSym]: Taxonomy.StateEnum.materialized,
 				[kindSym]: Taxonomy.KindEnum.dir,
-				content,
-			} satisfies MaterializedDir as Materialize<T>
+				content: await materializeTree(await template.content()),
+			} satisfies MaterializedDir as unknown as Materialize<T>
 		}
 
 		throw new Error(`Unknown kind ${template[kindSym]}`)

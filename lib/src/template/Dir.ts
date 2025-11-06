@@ -9,7 +9,7 @@ import {
 } from '../types.ts'
 import { mapValuesAsync } from '../lib/mapValuesAsync.ts'
 import { writeDir } from './write.ts'
-import { materialize } from './materialize.ts'
+import { isTemplate, materialize } from './materialize.ts'
 import { normalizePath } from '../lib/normalizePath.ts'
 import { fromPath } from './fromPath.ts'
 import { kindSym, stateSym } from '../internal.ts'
@@ -72,15 +72,16 @@ export class TemplateDir<
 	}
 
 	async content(): Promise<Content> {
-		return runWithContexts(this.contexts, async () => {
-			return (await mapValuesAsync(
+		const contexts = this.contexts
+		return runWithContexts(contexts, async () => {
+			return (await mapDirContent(
 				await this.#hoistedContent(),
-				async (Template) => {
-					const withContext = Template.withContext
-						? Template.withContext(...this.contexts)
-						: Template
+				async (template) => {
+					const withContext = template.withContext
+						? template.withContext(...contexts)
+						: template
 
-					return withContext as typeof Template
+					return withContext
 				},
 			)) as Content
 		})
@@ -96,4 +97,29 @@ export class TemplateDir<
 			relativeTo ? path.join(relativeTo, outputDir) : outputDir,
 		)
 	}
+}
+
+type MapDirContent<T extends TemplateDirContent, U> = {
+	[key in keyof T]: T[key] extends Template
+		? U
+		: T[key] extends TemplateDirContent
+			? MapDirContent<T[key], U>
+			: T[key]
+}
+
+async function mapDirContent<T extends TemplateDirContent, U>(
+	content: T,
+	callback: (value: Template, path: string[]) => Promise<U>,
+	path: string[] = [],
+): Promise<MapDirContent<T, U>> {
+	return mapValuesAsync(
+		content,
+		(value, key): Promise<U | MapDirContent<TemplateDirContent, U>> => {
+			if (isTemplate(value)) {
+				return callback(value, [...path, key.toString()])
+			} else {
+				return mapDirContent(value, callback, [...path, key.toString()])
+			}
+		},
+	) as Promise<MapDirContent<T, U>>
 }

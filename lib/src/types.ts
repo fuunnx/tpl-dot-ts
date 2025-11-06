@@ -26,7 +26,9 @@ export type Materialized =
 	| MaterializedDir
 	| MaterializedFile
 	| MaterializedReference
-export type MaterializedDirContent = Record<string, Materialized>
+export type MaterializedDirContent = {
+	[key: string]: Materialized
+}
 
 export interface MaterializedDir<
 	T extends MaterializedDirContent = MaterializedDirContent,
@@ -50,7 +52,9 @@ export interface MaterializedReference {
 
 // Template
 export type Template = ITemplateDir | ITemplateFile | ITemplateReference
-export type TemplateDirContent = Record<string, Template>
+export type TemplateDirContent = {
+	[key: string]: Template | TemplateDirContent
+}
 
 export interface ITemplateDir<
 	T extends TemplateDirContent = TemplateDirContent,
@@ -83,16 +87,19 @@ export interface ITemplateReference {
 
 // utilities
 
-export type Materialize<T extends Template> = T extends ITemplateDir<
-	infer DirContent extends TemplateDirContent
->
-	? MaterializedDir<MaterializeDirContent<DirContent>>
-	: T extends ITemplateFile
-		? MaterializedFile
-		: T extends ITemplateReference
-			? MaterializedReference
-			: never
+export type Materialize<T extends Template | TemplateDirContent> =
+	T extends ITemplateDir<infer DirContent extends TemplateDirContent>
+		? MaterializedDir<MaterializeDirContent<DirContent>>
+		: T extends ITemplateFile
+			? MaterializedFile
+			: T extends ITemplateReference
+				? MaterializedReference
+				: never
 
 type MaterializeDirContent<T extends TemplateDirContent> = {
-	[K in keyof T]: Materialize<T[K]>
+	[K in keyof T]: T[K] extends TemplateDirContent
+		? MaterializedDir<MaterializeDirContent<T[K]>>
+		: T[K] extends Template
+			? Materialize<T[K]>
+			: never
 }

@@ -41,5 +41,11 @@ export default function Tpl() {
 				b: 2,
 			}),
 		}),
+		'someOtherDir/nestedBis': {
+			'./someOtherFile.yaml': defineFile({
+				a: 1,
+				b: 2,
+			}),
+		},
 	})
 }

@@ -31,13 +31,13 @@ export async function writeDir(dir: MaterializedDir, outputDir: string) {
 
 	const files = dir.content
 
-  if(files === null) {
-    await fs.promises.rm(outputDir, { recursive: true })
-    return
-  }
+	if (files === null) {
+		await fs.promises.rm(outputDir, { recursive: true })
+		return
+	}
 
-	await mapValuesAsync(files, async (Materialized, fileName) => {
-		return write(Materialized, path.join(tmpOutput, String(fileName)))
+	await mapValuesAsync(files, async (materialized, fileName) => {
+		return write(materialized, path.join(tmpOutput, String(fileName)))
 	})
 
 	await fs.promises.mkdir(outputDir, { recursive: true })
@@ -49,7 +49,7 @@ export async function writeFile(
 	materialized: MaterializedFile,
 	outputFileName: string,
 ) {
-  if(materialized.content === null) return
+	if (materialized.content === null) return
 	return fs.promises.writeFile(outputFileName, materialized.content)
 }
 
