@@ -10,6 +10,6 @@ typecheck:
 
 smoketest:
 	(cd lib && pnpm build)
-	pnpm dlx tsx ./examples/01-quick-start/run.ts
-	pnpm dlx tsx ./examples/02-docker-compose/run.ts
-	pnpm dlx tsx ./examples/03-printer-with-metadata/run.ts
+	./examples/01-quick-start/run.ts
+	./examples/02-docker-compose/run.ts
+	./examples/03-printer-with-metadata/run.ts
