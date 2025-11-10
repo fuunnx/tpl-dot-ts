@@ -35,19 +35,19 @@ export interface MaterializedDir<
 > {
 	readonly [stateSym]: Taxonomy.StateEnum.materialized
 	readonly [kindSym]: Taxonomy.KindEnum.dir
-	content: T | null
+	readonly content: T | null
 }
 
 export interface MaterializedFile {
 	readonly [stateSym]: Taxonomy.StateEnum.materialized
 	readonly [kindSym]: Taxonomy.KindEnum.file
-	content: string | null // maybe implement stream interface too for better perf ?
+	readonly content: string | null // maybe implement stream interface too for better perf ?
 }
 
 export interface MaterializedReference {
 	readonly [stateSym]: Taxonomy.StateEnum.materialized
 	readonly [kindSym]: Taxonomy.KindEnum.reference
-	path: string
+	readonly path: string
 }
 
 // Template

@@ -8,9 +8,8 @@ import {
 } from '../types.ts'
 import path from 'node:path'
 import { mapValuesAsync } from '../lib/mapValuesAsync.ts'
-import { tmpdir } from 'node:os'
-import { randomUUID } from 'node:crypto'
 import { kindSym } from '../internal.ts'
+import { withAtomicDir, safeRm, withAtomicFile } from '../lib/atomicFS'
 
 export async function write(materialized: Materialized, outputName: string) {
 	switch (materialized[kindSym]) {
@@ -26,23 +25,18 @@ export async function write(materialized: Materialized, outputName: string) {
 }
 
 export async function writeDir(dir: MaterializedDir, outputDir: string) {
-	const tmpOutput = `${tmpdir()}/tpl-dot-ts-${randomUUID()}`
-	await fs.promises.mkdir(tmpOutput, { recursive: true })
-
 	const files = dir.content
 
 	if (files === null) {
-		await fs.promises.rm(outputDir, { recursive: true })
+		await safeRm(outputDir)
 		return
 	}
 
-	await mapValuesAsync(files, async (materialized, fileName) => {
-		return write(materialized, path.join(tmpOutput, String(fileName)))
+	return withAtomicDir(outputDir, async (tmpdir) => {
+		await mapValuesAsync(files, async (materialized, fileName) => {
+			return write(materialized, path.join(tmpdir, String(fileName)))
+		})
 	})
-
-	await fs.promises.mkdir(outputDir, { recursive: true })
-	await fs.promises.rm(outputDir, { recursive: true })
-	await fs.promises.rename(tmpOutput, outputDir)
 }
 
 export async function writeFile(
@@ -50,12 +44,16 @@ export async function writeFile(
 	outputFileName: string,
 ) {
 	if (materialized.content === null) return
-	return fs.promises.writeFile(outputFileName, materialized.content)
+	return withAtomicFile(outputFileName, async (tmpFile) => {
+		await fs.promises.writeFile(tmpFile, materialized.content!)
+	})
 }
 
 export async function writeReference(
 	Materialized: MaterializedReference,
 	outputFileName: string,
 ) {
-	await fs.promises.copyFile(Materialized.path, outputFileName)
+	return withAtomicFile(outputFileName, async (tmpFile) => {
+		await fs.promises.copyFile(Materialized.path, tmpFile)
+	})
 }
