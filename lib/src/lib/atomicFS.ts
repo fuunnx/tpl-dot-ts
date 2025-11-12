@@ -37,7 +37,7 @@ async function withAtomicResource(
 ) {
   const backup = new BackupManager(targetPath);
 
-  using tmp = await createTemp();
+  const tmp = await createTemp();
 
   try {
     await fn(tmp.path);
@@ -48,6 +48,8 @@ async function withAtomicResource(
   } catch (err) {
     await backup.restore();
     throw err;
+  } finally {
+    await tmp[Symbol.asyncDispose]();
   }
 }
 
@@ -88,7 +90,7 @@ export async function exists(pathToCheck: string) {
 
 class TempResource {
   constructor(public path: string) {}
-  async [Symbol.dispose]() {
+  async [Symbol.asyncDispose]() {
     await safeRm(this.path);
   }
 }
