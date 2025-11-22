@@ -1,6 +1,5 @@
-import yaml from 'yaml'
 import type { Printer } from './types.ts'
-import { isPlainObject } from 'src/lib/predicates.ts'
+import { isPlainObject } from '../lib/predicates.ts'
 
 export namespace TplTs {
 	export interface Printers {
@@ -21,23 +20,7 @@ export namespace TplTs {
 
 export type Printable = TplTs.Printers[keyof TplTs.Printers]['data']
 
-export function yamlPrinter(): Printer {
-	return {
-		name: 'yaml',
-		print: async (fileName, getData) => {
-			if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) {
-				const data = await getData((x) => isPlainObject(x) || Array.isArray(x))
-
-				return (
-					yaml
-						.stringify(data)
-						// replace all `key: {}` with `key:`
-						.replaceAll(/(.*:) \{\}/gi, '$1')
-				)
-			}
-		},
-	}
-}
+export { yamlPrinter } from './yaml/index.ts'
 
 export function jsonPrinter(): Printer {
 	return {
