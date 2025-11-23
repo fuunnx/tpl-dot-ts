@@ -88,6 +88,7 @@ nested:
 	test('comment as value', () => {
 		const original = {
 			foo: 'foo',
+			bar: meta.comment('Hello'),
 			nested: {
 				key: 'value',
 				volumes: meta.disabled(['bar', 'baz'], 'Hello'),
@@ -97,6 +98,7 @@ nested:
 		expect(stringified.trim()).toEqual(
 			`
 foo: foo
+# Hello
 nested:
   key: value
   # Hello
@@ -114,6 +116,7 @@ nested:
 		const original = {
 			foo: 'foo',
 			volumes: [
+				meta.comment('this is a comment'),
 				'bar:baz',
 				meta.disabled('hello:world', 'enable in dev mode'),
 				'baz:qux',
@@ -124,6 +127,7 @@ nested:
 			`
 foo: foo
 volumes:
+  # this is a comment
   - bar:baz
   # enable in dev mode
   # - hello:world
@@ -136,7 +140,7 @@ volumes:
 			JSON.parse(
 				JSON.stringify({
 					...original,
-					volumes: original.volumes.filter((x) => typeof x === 'string'), // TODO handle JSON replacer too
+					volumes: original.volumes.filter((x) => typeof x === 'string'), // TODO create a JSON replacer to handle this scenario
 				}),
 			),
 		)
