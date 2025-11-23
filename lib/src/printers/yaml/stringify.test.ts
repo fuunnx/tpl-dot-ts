@@ -145,4 +145,31 @@ volumes:
 			),
 		)
 	})
+
+	test('meta.withComment* on primitives', () => {
+		const original = {
+			foo: meta.withCommentInline(true, 'comment 1'),
+			volumes: [
+				meta.withCommentBefore('value', 'comment 2'),
+				'bar:baz',
+				meta.withCommentInline(1, 'comment 3'),
+				'baz:qux',
+			],
+		}
+		const stringified = yamlStringify(original)
+		expect(stringified.trim()).toEqual(
+			`
+foo: true # comment 1
+volumes:
+  # comment 2
+  - value
+  - bar:baz
+  - 1 # comment 3
+  - baz:qux
+      `.trim(),
+		)
+
+		const parsed = YAML.parse(stringified)
+		expect(parsed).toEqual(JSON.parse(JSON.stringify(original)))
+	})
 })

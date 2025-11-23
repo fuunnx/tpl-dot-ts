@@ -9,7 +9,6 @@ interface IMeta {
 	commentInline?: string
 }
 class Meta implements IMeta {
-	disabled?: boolean
 	original?: unknown
 	commentBefore?: string
 	commentInline?: string
@@ -29,14 +28,14 @@ class Comment {
 	meta: Meta;
 	[hasMetaSymbol] = true
 
-	constructor(meta: Meta) {
+	constructor(meta: IMeta) {
 		const spreadableKey = `__meta_${randomUUID()}__` as const
 
-		this.meta = meta
+		this.meta = new Meta(meta)
 
 		Object.defineProperties(this, {
 			[spreadableKey]: {
-				value: meta,
+				value: this.meta,
 				enumerable: true,
 			},
 			meta: {
@@ -51,23 +50,64 @@ class Comment {
 	}
 }
 
-function disabled(value: unknown, commentBefore?: string) {
-	return new Comment(
-		new Meta({
-			disabled: true,
-			original: value,
-			commentBefore,
-		}),
+export type Boxed<T> = T extends string
+	? String
+	: T extends number
+		? Number
+		: T extends boolean
+			? Boolean
+			: T
+
+function boxed<T>(value: T): Boxed<T> {
+	if (typeof value === 'string') return new String(value) as Boxed<T>
+	if (typeof value === 'number') return new Number(value) as Boxed<T>
+	if (typeof value === 'boolean') return new Boolean(value) as Boxed<T>
+	return value as Boxed<T>
+}
+
+function unboxed<T>(value: Boxed<T>): T {
+	if (value instanceof String) return value.valueOf() as T
+	if (value instanceof Number) return value.valueOf() as T
+	if (value instanceof Boolean) return value.valueOf() as T
+	return value as T
+}
+
+const metaRegistry = new WeakMap<WeakKey, Meta>()
+export const getMeta = (value: unknown): Meta | undefined => {
+	if (isWeakKey(value)) return metaRegistry.get(value)
+	return undefined
+}
+
+function withMeta<T>(value: T, meta: Meta): Boxed<T> {
+	const boxedValue = boxed(value)
+	metaRegistry.set(boxedValue as WeakKey, meta)
+	return boxedValue
+}
+
+function isWeakKey(value: unknown): value is WeakKey {
+	return (
+		(typeof value === 'object' && value !== null) ||
+		typeof value === 'function' ||
+		typeof value === 'symbol'
 	)
 }
 
-function comment(commentBefore: string) {
-	return disabled(undefined, commentBefore)
-}
-
 export const meta = {
-	comment,
-	disabled,
+	withCommentBefore<T>(value: T, commentBefore: string): Boxed<T> {
+		return withMeta(value, new Meta({ commentBefore }))
+	},
+	withCommentInline<T>(value: T, commentInline: string): Boxed<T> {
+		return withMeta(value, new Meta({ commentInline }))
+	},
+	comment(commentBefore: string) {
+		return meta.disabled(undefined, commentBefore)
+	},
+	disabled(value: unknown, commentBefore?: string): Record<string, never> {
+		return new Comment({
+			original: value,
+			commentBefore,
+		}) as unknown as Record<string, never>
+	},
 }
 
 export function yamlStringify(data: unknown): string {
@@ -78,56 +118,82 @@ export function yamlStringify(data: unknown): string {
 		return placeholderKey
 	}
 
-	function stringifyMeta(key: string | undefined | number, metaValue: Meta) {
-		const commentBefore = metaValue.commentBefore
+	function stringifyMeta(
+		key: string | undefined | number,
+		metaValue: Meta,
+		value?: unknown,
+	) {
+		const { commentBefore, commentInline, original } = metaValue
 
 		const originalStringified = (() => {
-			if (metaValue.original === undefined) return ''
+			if (original === undefined) return ''
 			if (key === undefined) {
-				return yamlStringify(metaValue.original).trim()
+				return yamlStringify(original).trim()
 			}
 			if (typeof key === 'number') {
-				return yamlStringify([metaValue.original]).trim()
+				return yamlStringify([original]).trim()
 			}
 			if (typeof key === 'string') {
-				return yamlStringify({ [key]: metaValue.original }).trim()
+				return yamlStringify({ [key]: original }).trim()
 			}
 		})()
 
-		const stringValue = [commentBefore, originalStringified]
-			.filter(Boolean)
-			.join('\n')
+		const valueStringified = (() => {
+			if (value === undefined) return ''
+			if (key === undefined) {
+				return yamlStringify(value).trim()
+			}
+			if (typeof key === 'number') {
+				return yamlStringify([value]).trim()
+			}
+			if (typeof key === 'string') {
+				return yamlStringify({ [key]: value }).trim()
+			}
+		})()
 
-		return createPlaceHolder(prefixLines(stringValue, '# '))
+		const comments = prefixLines(
+			[commentBefore, originalStringified].filter(Boolean).join('\n').trim(),
+			'# ',
+		)
+
+		const valueWithInlineComment = [
+			valueStringified,
+			commentInline !== undefined && prefixLines(commentInline, '# '),
+		]
+			.filter(Boolean)
+			.join(' ')
+
+		return createPlaceHolder(
+			[comments, valueWithInlineComment].filter(Boolean).join('\n'),
+		)
 	}
 
 	const lines = YAML.stringify(
 		data,
-		function replacer(key, currentValue) {
-			const isComment = currentValue instanceof Comment
+		function replacer(key, replacedValue) {
+			const isComment = replacedValue instanceof Comment
 			if (isComment) {
-				const placeholderKey = stringifyMeta(key, currentValue.meta)
+				const placeholderKey = stringifyMeta(key, replacedValue.meta)
 				return placeholderKey
 			}
-			if (!isPlainObject(currentValue)) return currentValue
 
-			// const hasMeta = currentValue[hasMetaSymbol]
+			const attachedMeta = getMeta(replacedValue)
+			if (attachedMeta) {
+				return stringifyMeta(key, attachedMeta, unboxed(replacedValue))
+			}
+
+			if (!isPlainObject(replacedValue)) return replacedValue
+
 			const hasToJson =
-				'toJSON' in currentValue && typeof currentValue.toJSON === 'function'
-			// const isCommentObject = currentValuecurrentValue instanceof Comment
+				'toJSON' in replacedValue && typeof replacedValue.toJSON === 'function'
 
-			if (hasToJson) return (currentValue.toJSON as () => unknown)()
-			// if (!hasMeta) return currentValue
+			if (hasToJson) return (replacedValue.toJSON as () => unknown)()
 
 			let result: Record<string | symbol, any> = {}
 
-			const keys = Object.keys(currentValue)
+			const keys = Object.keys(replacedValue)
 			for (const key of keys) {
-				const value = currentValue[key]
-				if (typeof key !== 'string') {
-					result[key] = value
-					continue
-				}
+				const value = replacedValue[key]
 
 				if (Array.isArray(value)) {
 					result[key] = value.map((x, index) => {
@@ -171,6 +237,7 @@ export function yamlStringify(data: unknown): string {
 }
 
 function prefixLines(lines: string, prefix: string) {
+	if (lines === '') return ''
 	return lines
 		.split('\n')
 		.map((line) => `${prefix}${line}`)
