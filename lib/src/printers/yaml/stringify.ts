@@ -197,7 +197,7 @@ export function yamlStringify(data: unknown): string {
 
 				if (Array.isArray(value)) {
 					result[key] = value.map((x, index) => {
-						return replacer(index, x)
+						return replacer(index, x) // some values may be processed twice
 					})
 					continue
 				}

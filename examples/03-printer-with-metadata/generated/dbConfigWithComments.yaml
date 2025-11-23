@@ -1,0 +1,8 @@
+# Database configuration
+# 
+# With sensible defaults for dev mode
+host: localhost
+port: "5432" # Default port
+# Uncomment in dev
+# user: postgres
+# password: my-secret-password

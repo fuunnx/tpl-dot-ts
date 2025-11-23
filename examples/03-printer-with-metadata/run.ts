@@ -7,12 +7,14 @@ import {
 	runWithContexts,
 	isPlainObject,
 	defineDir,
+	meta,
 } from 'tpl-dot-ts'
 
 const HostsRegistryContext = createContext<Set<string>>('hosts registry')
 
 export function toIni(data: Record<string, unknown>): string {
 	return Object.entries(data)
+		.filter(([key]) => !key.startsWith('__meta_'))
 		.map(([key, value]) => `${key}=${value}`)
 		.join('\n')
 }
@@ -33,17 +35,35 @@ ${toIni(data)}
 	},
 })
 
+const dbConfig = {
+	...meta.comment(`
+Database configuration
+
+With sensible defaults for dev mode
+
+`),
+	host: 'localhost',
+	port: meta.withCommentInline('5432', 'Default port'),
+
+	...meta.disabled(
+		{
+			user: 'postgres',
+			password: 'my-secret-password',
+		},
+		'Uncomment in dev',
+	),
+}
+
 defineDir(() => {
 	return {
 		'./config.ini': defineFile(() => {
-			const dbConfig = {
-				host: 'localhost',
-				port: '5432',
-			}
-
 			// append metadata
 			HostsRegistryContext.getContextValue().add(dbConfig.host)
 
+			return dbConfig
+		}),
+
+		'./dbConfigWithComments.yaml': defineFile(() => {
 			return dbConfig
 		}),
 	}

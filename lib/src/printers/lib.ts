@@ -33,7 +33,7 @@ export function combinePrinters(printers: Printer[], name?: string) {
 						return res
 					} catch (error) {
 						if (controlFlow.isBreak(error)) throw error
-						if (controlFlow.isContinue(error)) return error
+						if (controlFlow.isContinue(error)) return error.value
 						throw error
 					}
 				}
