@@ -6,3 +6,10 @@ port: "5432" # Default port
 # Uncomment in dev
 # user: postgres
 # password: my-secret-password
+# some comment
+# some disabled code:
+#   hello: world
+#   with nested comment:
+#     # some nested comment
+#     # - some commented string
+#     - some value

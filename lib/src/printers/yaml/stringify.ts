@@ -8,7 +8,61 @@ interface IMeta {
 	commentBefore?: string
 	commentInline?: string
 }
+
+interface IMeta {
+	key?: string | number
+	original?: unknown
+	commentBefore?: string
+}
+
+function computeMetaFromHashPrefix(
+	key: string | number,
+	value: unknown,
+): IMeta | undefined {
+	if (typeof key === 'string') {
+		if (!key.startsWith('# ')) return undefined
+
+		const cleanKey = key.replace(/^#\s?/, '')
+		if (typeof value === 'string' && (value.endsWith(' #') || value === '#')) {
+			return {
+				key: undefined,
+				original: undefined,
+				commentBefore: cleanKey,
+			}
+		} else {
+			return {
+				key: cleanKey,
+				original: value,
+			}
+		}
+	}
+
+	if (typeof key === 'number') {
+		if (
+			typeof value === 'string' &&
+			(value.startsWith('# ') || value === '#')
+		) {
+			const cleanValue = value.replace(/^#\s?/, '')
+			if (value.endsWith(' #')) {
+				return {
+					key,
+					original: undefined,
+					commentBefore: cleanValue.replace(/\s?#$/, ''),
+				}
+			} else {
+				return {
+					key,
+					original: [cleanValue],
+				}
+			}
+		}
+	}
+
+	return undefined
+}
+
 class Meta implements IMeta {
+	key: string | number | undefined
 	original?: unknown
 	commentBefore?: string
 	commentInline?: string
@@ -110,7 +164,15 @@ export const meta = {
 	},
 }
 
-export function yamlStringify(data: unknown): string {
+export type YamlStringifyConfig = {
+	interpretHashAsComments?: boolean
+}
+export function yamlStringify(
+	data: unknown,
+	options: YamlStringifyConfig = {},
+): string {
+	const { interpretHashAsComments } = options
+
 	const placeHolderValues = new Map<string, string>()
 	const createPlaceHolder = (value: string) => {
 		const placeholderKey = `__PLACEHOLDER_${randomUUID()}__`
@@ -120,34 +182,34 @@ export function yamlStringify(data: unknown): string {
 
 	function stringifyMeta(
 		key: string | undefined | number,
-		metaValue: Meta,
+		metaValue: IMeta,
 		value?: unknown,
 	) {
 		const { commentBefore, commentInline, original } = metaValue
 
 		const originalStringified = (() => {
 			if (original === undefined) return ''
-			if (key === undefined) {
+			if (key === undefined || key === '') {
 				return yamlStringify(original).trim()
 			}
 			if (typeof key === 'number') {
-				return yamlStringify([original]).trim()
+				return yamlStringify([original], options).trim()
 			}
 			if (typeof key === 'string') {
-				return yamlStringify({ [key]: original }).trim()
+				return yamlStringify({ [key]: original }, options).trim()
 			}
 		})()
 
 		const valueStringified = (() => {
 			if (value === undefined) return ''
 			if (key === undefined) {
-				return yamlStringify(value).trim()
+				return yamlStringify(value, options).trim()
 			}
 			if (typeof key === 'number') {
-				return yamlStringify([value]).trim()
+				return yamlStringify([value], options).trim()
 			}
 			if (typeof key === 'string') {
-				return yamlStringify({ [key]: value }).trim()
+				return yamlStringify({ [key]: value }, options).trim()
 			}
 		})()
 
@@ -170,7 +232,18 @@ export function yamlStringify(data: unknown): string {
 
 	const lines = YAML.stringify(
 		data,
-		function replacer(key, replacedValue) {
+		function replacer(key: string | number, replacedValue) {
+			const meta =
+				interpretHashAsComments && computeMetaFromHashPrefix(key, replacedValue)
+
+			if (meta) {
+				const placeholderKey = stringifyMeta(
+					String(key).slice('# '.length),
+					meta,
+				)
+				return placeholderKey
+			}
+
 			const isComment = replacedValue instanceof Comment
 			if (isComment) {
 				const placeholderKey = stringifyMeta(key, replacedValue.meta)
@@ -205,6 +278,17 @@ export function yamlStringify(data: unknown): string {
 				const isComment = value instanceof Comment
 				if (isComment) {
 					const placeholderKey = stringifyMeta(key, value.meta)
+					result[placeholderKey] = null
+					continue
+				}
+
+				const meta =
+					interpretHashAsComments && computeMetaFromHashPrefix(key, value)
+				if (meta) {
+					const placeholderKey = stringifyMeta(
+						String(key).slice('# '.length),
+						meta,
+					)
 					result[placeholderKey] = null
 					continue
 				}

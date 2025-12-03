@@ -8,32 +8,38 @@ import {
 	isPlainObject,
 	defineDir,
 	meta,
+	yamlPrinter,
 } from 'tpl-dot-ts'
 
 const HostsRegistryContext = createContext<Set<string>>('hosts registry')
 
 export function toIni(data: Record<string, unknown>): string {
 	return Object.entries(data)
-		.filter(([key]) => !key.startsWith('__meta_'))
+		.filter(([key]) => !key.startsWith('__meta_') && !key.startsWith('#'))
 		.map(([key, value]) => `${key}=${value}`)
 		.join('\n')
 }
 
-const printerContext = PrinterContext.appendedBy({
-	name: 'context',
-	async print(fileName, getData) {
-		const registry = new Set<string>()
-		const data = await runWithContexts(
-			[new HostsRegistryContext(registry)],
-			() => getData(isPlainObject),
-		)
+const printerContext = new PrinterContext([
+  yamlPrinter({ interpretHashAsComments: true }),
+	{
+		name: 'context',
+		async print(fileName, getData) {
+      if(!fileName.endsWith('.ini')) return
 
-		return `
+			const registry = new Set<string>()
+			const data = await runWithContexts(
+				[new HostsRegistryContext(registry)],
+				() => getData(isPlainObject),
+			)
+
+			return `
 # Hosts listed in this file: ${Array.from(registry.values()).join(', ')}
 ${toIni(data)}
 `
+		},
 	},
-})
+])
 
 const dbConfig = {
 	...meta.comment(`
@@ -52,6 +58,16 @@ With sensible defaults for dev mode
 		},
 		'Uncomment in dev',
 	),
+
+	'# some comment': '#',
+	'# some disabled code': {
+		hello: 'world',
+		'with nested comment': [
+			'# some nested comment #',
+			'# some commented string',
+			'some value',
+		],
+	},
 }
 
 defineDir(() => {
